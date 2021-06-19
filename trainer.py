@@ -26,18 +26,44 @@ parser.add_argument('--traindata', type=str, default='',
                     help='Path to the Train directory of Imitrob')
 parser.add_argument('--testdata', type=str, default='',
                     help='Path to the Test directory of Imitrob')
+parser.add_argument('--bg_path', type=str, default="",
+                    help='Path to the backgrounds folder')
 parser.add_argument('--epochs', type=int, default=10, 
                     help='Number of epochs to train')
-parser.add_argument('--lr', type=int, default=0.0001,
+parser.add_argument('--lr', type=float, default=0.0001,
                     help='Learning rate')
-parser.add_argument('--batch-size', type=int, default=16,
+parser.add_argument('--batch_size', type=int, default=16,
                     help='Batch size')
-parser.add_argument('--batch-size-test', type=int, default=128,
+parser.add_argument('--batch_size_test', type=int, default=128,
                     help='Batch size for testing')
-parser.add_argument('--max-vis', type=int, default=128,
+parser.add_argument('--max_vis', type=int, default=128,
                     help='Maximum .jpg visualizations (output examples) to be saved for test')
-parser.add_argument('--bg-path', type=str, default="",
-                    help='Path to the backgrounds folder')
+parser.add_argument('--exp_name', type=str, default="",
+                    help='Name of the folder were results will be stored. Choose unique name for every experiment')
+parser.add_argument('--mask_type', action='store',choices=['Mask','Mask_thresholding'],type=str,default='Mask',
+                    help='Choose the type of mask used during training. Mask or Mask_thresholding')
+parser.add_argument('--randomizer_mode', action='store',choices=['none','bbox','overlay','overlay_noise_bg'],type=str,default='overlay',
+                    help='Choose the type of input augmentation. none,bbox,overlay or overlay_noise_bg')
+parser.add_argument('--num_workers', type=int, default=0,
+                    help='Number of dataloader workers. Use 0 for Win')
+parser.add_argument('--gpu_device', type=int, default=0,
+                    help='Gpu device to use for training')
+parser.add_argument('--dataset_type', action='store',choices=['gluegun', 'groutfloat', 'roller'],type=str,default='gluegun',
+                    help='Choose the type of data used in training and testing. gluegun, groutfloat or roller')
+parser.add_argument('--subject', type=str, default="",
+                    help='List of subjects to be used for training. All subjects: S1,S2,S3,S4')
+parser.add_argument('--camera', type=str, default="",
+                    help='List of cameras to be used for training. All cameras: C1,C2')
+parser.add_argument('--hand', type=str, default="",
+                    help='List of hands to be used for training. All hands: LH,RH')
+parser.add_argument('--subject_test', type=str, default="",
+                    help='List of subjects to be used for testing. All subjects: S1,S2,S3,S4')
+parser.add_argument('--camera_test', type=str, default="",
+                    help='List of cameras to be used for testing. All cameras: C1,C2')
+parser.add_argument('--hand_test', type=str, default="",
+                    help='List of hands to be used for testing. All hands: LH,RH')
+parser.add_argument('--task_test', type=str, default="",
+                    help='List of tasks to be used for testing. All tasks: clutter,round,sweep,press,frame,sparsewave,densewave')
 args = parser.parse_args()
 
 
@@ -58,19 +84,19 @@ AUC_test_thresh = 0.02
 AUC_test_thresh_2 = 0.1
 AUC_test_thresh_range = [0.,0.1]
 
-dataset_type = 'groutfloat'
+dataset_type = args.dataset_type
 
-experiment_name = 'groutfloat_test_FULL_RES'
+experiment_name = args.exp_name
 
-mask_type = 'Mask'
+mask_type = args.mask_type
 
-randomizer_mode = 'overlay'
+randomizer_mode = args.randomizer_mode
 
 randomization_prob = 0.75 
 photo_bg_prob = 1.
 
 #sets the number of workers for dataloader, set to 0 for windows
-num_workers = 0
+num_workers = args.num_workers
 
 dataset_path_train = args.traindata
 dataset_path_test = args.testdata
@@ -83,7 +109,7 @@ input_scale = 2
 sigma = 2
 radius = 2
 
-gpu_device = 0
+gpu_device = args.gpu_device
 
 #test_set_selection = 'fraction'/'subset' if 'fraction' - all types of images are selected for training and
 #random fraction of are selected as a test set, if 'subset' - specify which types of images
@@ -91,29 +117,41 @@ gpu_device = 0
 test_set_selection = 'subset'
 
 #determine what parts of dataset to include
+def proc_args(inp):
+    
+    inp = list(inp.strip('[]').split(','))
+    
+    return inp
 
-subject = ['S1','S2','S3','S4']            
-camera = ['C1','C2']
-background = ['green']
-movement_type = ['random','round','sweep','press']
-movement_direction = ['left','right']
+# all subjects: ['S1','S2','S3','S4']
+# all cameras: [C1,C2]
+# all tasks: ['clutter','round','sweep','press','frame','sparsewave','densewave']
+# all hands: ['LH','RH']
+# all object types: ['gluegun', 'groutfloat', 'roller']
+
+dataset_subset = ['Train']
+subject = proc_args(args.subject)            
+camera = proc_args(args.camera)
+task = ['random']
+hand = proc_args(args.hand)
 object_type = [dataset_type]
 
-subject_test = ['S1','S2','S3','S4']            
-camera_test = ['C1','C2']
-background_test = ['table']
-movement_type_test = ['random','round','sweep','press']
-movement_direction_test = ['left','right']
+dataset_subset_test = ['Test']
+subject_test = proc_args(args.subject_test)            
+camera_test = proc_args(args.camera_test)
+task_test = proc_args(args.task_test)
+hand_test = proc_args(args.hand_test)
 object_type_test = [dataset_type]
 
 
-attributes_train = [subject,camera,background,movement_type,movement_direction,object_type,mask_type]
-attributes_test = [subject_test,camera_test,background_test,movement_type_test,movement_direction_test,object_type_test,mask_type]
-
+attributes_train = [dataset_subset,subject,camera,task,hand,object_type,mask_type]
+attributes_test = [dataset_subset_test,subject_test,camera_test,task_test,hand_test,object_type_test,mask_type]
 
 #initialize network
 net = dope_net(lr,gpu_device)
 
+#dataset = imitrob_dataset(dataset_path,'train',test_set_selection,test_examples_fraction,[move,subjects,camera,trial],[move_test,subjects_test,camera_test,trial_test]) 
+#dataset = imitrob_dataset(dataset_path,'train',test_set_selection,test_examples_fraction,attributes_train,attributes_test,randomization_prob,input_scale,sigma,radius)
 
 dataset = imitrob_dataset(dataset_path_train,bg_path,'train',test_set_selection,
                           randomizer_mode,mask_type,True,True,test_examples_fraction_train,
@@ -130,6 +168,12 @@ dataset_test = imitrob_dataset(dataset_path_test,bg_path,'test',test_set_selecti
 dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True, num_workers=num_workers)
 dataloader_test = DataLoader(dataset_test, batch_size=batch_size_test,shuffle=True, num_workers=num_workers)
 
+#dataset_defoults = dataset.get_dataset_defoults()
+
+#pnp_cuboid_vertices = np.concatenate((dataset_defoults['bb3d_defoult'],dataset_defoults['centroid3d_defoult']))
+
+#pnp_solver = CuboidPNPSolver(camera_intrinsic_matrix = dataset_defoults['internal_calibration_matrix'],
+#                             cuboid3d = pnp_cuboid_vertices)
 
 #create log folder in results folder and write training info into log file
 cwd = os.getcwd()
@@ -315,6 +359,22 @@ for i in range(epochs):
 
         cuboid2d,_ = find_objects(belief_test[j,:,:,:].astype(np.float64),affinity_test[j,:,:,:].astype(np.float64),1,input_scale)
 
+
+#        try:
+#        
+#            cuboid2d,_ = find_objects(belief_test[j,:,:,:].astype(np.float64),affinity_test[j,:,:,:].astype(np.float64),1)
+#            
+#        except:
+#                
+#               cuboid2d = None
+#               object_finder_exceptions += 1
+               
+#            if no objects are found or exception occurs skip this particular net output
+#            therefore the errors are calculated only in cases where some object was found
+#            cuboid2d contains the 2d coordinates of bb vertcies + the 2d coordinates of the bb centroid
+#            cuboid2d dimension is (9,2), 8 vertices, last coordinate is the centroid
+#            the order of vertcies is the same as the order in ground truth, which is specified in README.txt file in imitrob_data_organized
+#            the ordering is also specified in object_detector.py
         
         
         if cuboid2d is None:

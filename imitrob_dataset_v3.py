@@ -20,12 +20,10 @@ from dataset_tools import project_from_3d_to_2d
 from maps_tools import CreateBeliefMap, GenerateMapAffinity
 from randomize_bg import BG_randomizer
 
-#IMPORTANT NOTE: for SR portion of dataset, this needs to be placed in T01 dir so as to keed the labelling consistent!!!
-#seems to be working fine
 
 class imitrob_dataset(Dataset):
     
-    def __init__(self,data_path,random_bg_path,mode,sample_selection_mode,randomizer_mode,mask_type,crop,flip,test_examples_fraction,attributes_train,attributes_test,randomization_prob = 0.5,photo_bg_prob = 0.5,scale=2,sigma=1,radius=1):
+    def __init__(self,data_path,random_bg_path,mode,sample_selection_mode,randomizer_mode,mask_type,crop,flip,test_examples_fraction,attributes_train,attributes_test,randomization_prob = 0.5,photo_bg_prob = 0.5,scale=2,sigma=2,radius=2):
         
 #        mode determines if we want to return test (mode = 'test'), or train (mode='train')        
         self.mode = mode
@@ -63,18 +61,15 @@ class imitrob_dataset(Dataset):
         # affinity and belief maps is in_resolution/8 
         self.gt_scale = 8*self.scale
         
-        
-#        sets scale and radius for belief and affinity map creation, sigma=1 and radius=1 works for 320x240
-#        try sigma=2 and radius=2 for 640x480
         self.sigma = sigma
         self.radius = radius
         
         
+        self.dataset_subset = ['Train','Test']
         self.subject = ['S1','S2','S3','S4']            
         self.camera = ['C1','C2']
-        self.background = ['green','table','normalclutter','superclutter']
-        self.movement_type = ['random','round','sweep','press','frame','sparsewave','densewave']
-        self.movement_direction = ['left','right']
+        self.task = ['random','clutter','round','sweep','press','frame','sparsewave','densewave']
+        self.hand = ['LH','RH']
         self.object_type = ['groutfloat','roller','gluegun']
         
         self.paths_images = []
@@ -83,18 +78,18 @@ class imitrob_dataset(Dataset):
         self.paths_BBox = []
         self.paths_6dof = []
         self.paths_params = []
-        self.paths_empty_background = []
+        # self.paths_empty_background = []
         
+        self.dataset_subset_list = []
         self.subject_list = []
         self.camera_list = []
-        self.background_list = []
-        self.movement_type_list = []
-        self.movement_direction_list = []
+        self.task_list = []
+        self.hand_list = []
         self.object_type_list = []
         
         self.im_name_list = []
         
-        for filename in glob.iglob(self.source_folder + '**/*.png', recursive=True):
+        for filename in glob.iglob(self.source_folder + '**/*.jpg', recursive=True):
             
             if 'Image' in filename:
                 
@@ -142,21 +137,6 @@ class imitrob_dataset(Dataset):
                 parameters_file_path = os.path.sep.join(parameters_file_list)
                 
                 
-                # determine path to empty background image
-                background_file_list = copy.deepcopy(img_file_list)
-                background_core_dir = background_file_list[-3]
-                background_core_dir = background_core_dir.split('_')
-                background_core_dir[1] = 'table'
-                background_core_dir[2] = 'C'
-                background_core_dir[3] = 'empty'
-                background_core_dir[4] = 'none'
-                background_core_dir[5] = 'none'
-                background_core_dir = '_'.join(background_core_dir)
-                background_file_name = img_file_cam_type + 'F0000.png'
-                background_file_list[-3] = background_core_dir
-                background_file_list[-1] = background_file_name
-                background_file_path = os.path.sep.join(background_file_list)
-                
                 # see if bbox file path exists
                 try:
                     with open(bbox_file_path) as f:
@@ -175,7 +155,7 @@ class imitrob_dataset(Dataset):
                         self.paths_6dof.append(sixdof_file_path)
                         self.paths_params.append(parameters_file_path)
                         self.im_name_list.append(img_ident)
-                        self.paths_empty_background.append(background_file_path)
+                        # self.paths_empty_background.append(background_file_path)
                     
                     else:
                         
@@ -187,6 +167,13 @@ class imitrob_dataset(Dataset):
 
         # make an list of attributes of every data sample
         for i in range(len(self.paths_images)):
+            
+            for d in self.dataset_subset:
+                
+                if d in self.paths_images[i]:
+                    
+                    self.dataset_subset_list.append(d)
+                    
             
             for s in self.subject:
                 
@@ -201,58 +188,61 @@ class imitrob_dataset(Dataset):
                     
                     self.camera_list.append(c)
                     
+            
+            # task is not defined for train subset, mark every Train image as having 'random' task 
+            if self.dataset_subset_list[-1] == 'Train':
                     
-            for b in self.background:
+                self.task_list.append('random') 
                 
-                if b in self.paths_images[i]:
+            else:
+            
+                for t in self.task:
                     
-                    self.background_list.append(b)
+                    if t in self.paths_images[i]:
+                        
+                        self.task_list.append(t)
                     
                     
-            for m in self.movement_type:
+            for h in self.hand:
                 
-                if m in self.paths_images[i]:
+                if h in self.paths_images[i]:
                     
-                    self.movement_type_list.append(m)
-                    
-                    
-            for d in self.movement_direction:
-                
-                if d in self.paths_images[i]:
-                    
-                    self.movement_direction_list.append(d)
+                    self.hand_list.append(h)
                     
                     
             for o in self.object_type:
                 
                 if o in self.paths_images[i]:
                     
-                    self.object_type_list.append(o)        
+                    self.object_type_list.append(o)   
+                    
         
-        self.subject_train = attributes_train[0]            
-        self.camera_train = attributes_train[1]
-        self.background_train = attributes_train[2]
-        self.movement_type_train = attributes_train[3]
-        self.movement_direction_train = attributes_train[4]
+        
+        self.dataset_subset_train = attributes_train[0]
+        self.subject_train = attributes_train[1]            
+        self.camera_train = attributes_train[2]
+        self.task_train = attributes_train[3]
+        self.hand_train = attributes_train[4]
         self.object_type_train = attributes_train[5]
         self.mask_type_train = attributes_train[6]
         
-        self.subject_test = attributes_test[0]            
-        self.camera_test = attributes_test[1]
-        self.background_test = attributes_test[2]
-        self.movement_type_test = attributes_test[3]
-        self.movement_direction_test = attributes_test[4]
+        self.dataset_subset_test = attributes_test[0]
+        self.subject_test = attributes_test[1]            
+        self.camera_test = attributes_test[2]
+        self.task_test = attributes_test[3]
+        self.hand_test = attributes_test[4]
         self.object_type_test = attributes_test[5]
-        self.mask_type_test = attributes_test[6]
+        self.mask_type_test = attributes_test[6]                
+        
         
         #determine valid indexes, ie indexes of the parts that we chose to include        
-        def det_valid_ind(subject,camera,background,movement_type,movement_direction,object_type):
+        def det_valid_ind(dataset_subset,subject,camera,task,hand,object_type):
         
             valid_indexes = []
                     
             for i in range(len(self.paths_images)):
                 
-                if (self.subject_list[i] in subject) and (self.camera_list[i] in camera) and (self.background_list[i] in background) and (self.movement_type_list[i] in movement_type) and (self.movement_direction_list[i] in movement_direction) and (self.object_type_list[i] in object_type):
+                if (self.dataset_subset_list[i] in dataset_subset) and (self.subject_list[i] in subject) and (self.camera_list[i] in camera) and (self.task_list[i] in task) and (self.hand_list[i] in hand) and (self.object_type_list[i] in object_type):
             
                     valid_indexes.append(i)
 
@@ -276,8 +266,8 @@ class imitrob_dataset(Dataset):
             
         else:
             
-            self.train_indexes = det_valid_ind(self.subject_train,self.camera_train,self.background_train,self.movement_type_train,self.movement_direction_train,self.object_type_train)
-            self.test_indexes = det_valid_ind(self.subject_test,self.camera_test,self.background_test,self.movement_type_test,self.movement_direction_test,self.object_type_test)
+            self.train_indexes = det_valid_ind(self.dataset_subset_train,self.subject_train,self.camera_train,self.task_train,self.hand_train,self.object_type_train)
+            self.test_indexes = det_valid_ind(self.dataset_subset_test,self.subject_test,self.camera_test,self.task_test,self.hand_test,self.object_type_test)
           
         print(len(self.train_indexes))
         print(len(self.test_indexes))
@@ -322,7 +312,6 @@ class imitrob_dataset(Dataset):
         bbox_path = self.paths_BBox[sample_index]
         sixdof_path = self.paths_6dof[sample_index]
         parameters_path = self.paths_params[sample_index]
-        background_path = self.paths_empty_background[sample_index]
         
         camera_type = self.camera_list[sample_index]
         
@@ -409,35 +398,10 @@ class imitrob_dataset(Dataset):
                 
                 img,bb2d,centroid2d = self.randomizer.randomize_bg_overlay_from_mask_noise_bg(img,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop,self.randomizer_mode_flip)
                 
-            elif self.randomizer_mode == 'bbox_empty_background':
-                
-                img,bb2d,centroid2d = self.randomizer.randomize_bg_bbox_from_mask_empty_scene(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                # img,bb2d,centroid2d = self.randomizer.randomize_bg_bbox_from_mask_empty_scene_no_bg_aug(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                
-            elif self.randomizer_mode == 'overlay_empty_background':
-                
-                img,bb2d,centroid2d = self.randomizer.randomize_bg_overlay_from_mask_empty_scene(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                
-            elif self.randomizer_mode == 'bbox_50_50_blend':
-                
-                img,bb2d,centroid2d = self.randomizer.randomize_bg_bbox_from_mask_50_50_blend(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                
-            elif self.randomizer_mode == 'bbox_50_50_random_blend':
-                
-                img,bb2d,centroid2d = self.randomizer.randomize_bg_bbox_from_mask_50_50_random_blend(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                
-            elif self.randomizer_mode == 'overlay_50_50_blend':
-                
-                img,bb2d,centroid2d = self.randomizer.randomize_bg_overlay_from_mask_50_50_blend(img,background_path,img_m,six_dof,bb2d,centroid2d,self.randomizer_mode_crop)
-                
             else:
                 
                 pass
 
-#        print(bb2d)
-#        print(centroid2d)
-#        plt.imshow(img)
-#        plt.show()
 
         #rescale image            
         if self.scale > 1:
@@ -471,9 +435,8 @@ class imitrob_dataset(Dataset):
         affinities = affinities.astype(np.float32)
         
 #        info for generating statistics
-        batch_label_info = [self.subject_list[sample_index],self.camera_list[sample_index],
-                            self.background_list[sample_index],self.movement_type_list[sample_index],
-                            self.movement_direction_list[sample_index],self.object_type_list[sample_index]]
+        batch_label_info = [self.dataset_subset_list[sample_index],self.subject_list[sample_index],self.camera_list[sample_index],self.task_list[sample_index],
+                            self.hand_list[sample_index],self.object_type_list[sample_index]]
         
         batch_file_info = [im_name]
         
@@ -512,99 +475,3 @@ class imitrob_dataset(Dataset):
                       'DEBUG_sample_index':np.array(sample_index)}
         
         return sample
-        
-
-
-        
-# import torch
-# from torch.utils.data import Dataset, DataLoader
-# import matplotlib.pyplot as plt
-# from PIL import Image
-
-# dataset_path = r''
-# #dataset_path_test = r''
-
-
-# bg_path = r''
-
-# batch_size = 4
-# test_examples_fraction = 0.
-
-# #sets the number of workers for dataloader, set to 0 for windows
-# num_workers = 0
-
-# subject = ['S4']            
-# camera = ['C1','C2']
-# background = ['green']
-# movement_type = ['random','round','sweep','press']
-# movement_direction = ['left','right']
-# object_type = ['roller']
-
-# subject_test = ['S4']            
-# camera_test = ['C1','C2']
-# background_test = ['table']
-# movement_type_test = ['random','round','sweep','press']
-# movement_direction_test = ['left','right']
-# object_type_test = ['roller']
-
-# mask_type = 'Mask_thresholding'
-
-# mode = 'train'
-# test_set_selection = 'subset'
-# randomizer_mode = 'bbox'
-
-# # where to save examples
-
-# samples_dir = r''
-
-# crop = True
-# test_examples_fraction = 0.
-# attributes_train = [subject,camera,background,movement_type,movement_direction,object_type,mask_type]
-# attributes_test = [subject_test,camera_test,background_test,movement_type_test,movement_direction_test,object_type_test,mask_type]
-# randomization_prob = 1.
-# photo_bg_prob = 1.
-# flip = False
-# crop = False
-
-# scale=1
-# sigma=2
-# radius=2
-
-# dataset = imitrob_dataset(dataset_path,bg_path,'train',test_set_selection,
-#                           randomizer_mode,mask_type,crop,flip,test_examples_fraction,
-#                           attributes_train,attributes_test,
-#                           randomization_prob,photo_bg_prob,
-#                           scale,sigma,radius)
-
-# dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True, num_workers=num_workers)
-
-# h = 0
-
-# for train_batch in enumerate(dataloader):
-        
-#     train_images = train_batch[1]['image']
-#     train_affinities = train_batch[1]['affinities']
-#     train_beliefs = train_batch[1]['belief_img']
-#     six_dof = train_batch[1]['six_dof'].numpy()
-#     # blend_ratio = train_batch[1]['DEBUG_blend_ratio'].numpy()
-# #    info = train_batch[1]['batch_label_info']
-# #    files = train_batch[1]['batch_file_info']
-    
-# #    break
-
-#     print(h)
-#     h+=1
-#     break
-
-# train_images = train_images.numpy()
-# train_images = np.rollaxis(train_images,1,4)
-
-# for i in range(len(train_images)):
-    
-#     plt.imshow(train_images[i,:,:,:])
-#     plt.show()
-
-#     im_save_path = os.path.join(samples_dir,'sample_' + str(i) + '.jpg')
-#     # im_save_path = os.path.join(samples_dir,'sample_' + str(i) + '_blend_rat_' + str(int(blend_ratio[i]*100)) + '.jpg')
-#     im = Image.fromarray((train_images[i,:,:,:]*255).astype(np.uint8))
-#     im.save(im_save_path)
