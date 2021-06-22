@@ -1,11 +1,9 @@
 numpy
-glob
-pickle
-PIL
+pickle-mixin
+Pillow
 opencv-python
 torch
 torchvision
 scipy
-re
-csv
+python-csv
 pyrr
