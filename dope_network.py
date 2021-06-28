@@ -323,22 +323,14 @@ class dope_net():
         
         
       def save_model(self,filename):
-          
           torch.save(self.net.state_dict(),filename)
           
       def empty_cuda_cache(self):
-          
           torch.cuda.empty_cache()
           
           
       def load_model(self,filename):
-          
           if self.cud:
-          
-              self.net.load_state_dict(torch.load(filename,map_location = 'cuda:0'))
-              
+             self.net.load_state_dict(torch.load(filename,map_location = 'cuda:0'))
           else:
-              
               self.net.load_state_dict(torch.load(filename,map_location='cpu'))
-        
-        
