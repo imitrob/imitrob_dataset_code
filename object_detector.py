@@ -45,7 +45,7 @@ The indexes of the 3D bounding cuboid (bb2d) are in the following order:
 
 
 def find_objects(vertex2, aff, scale = 1,input_scale = 2, numvertex=8):
-    '''Detects objects given network belief maps and affinities, using heuristic method'''
+    ''' Detects objects given network belief maps and affinities, using heuristic method'''
     
 #    INPUT PARAMETERS:
 #    vertex2: belief map, size: (9,x,y), where x,y are dimensions of network output,
@@ -74,9 +74,7 @@ def find_objects(vertex2, aff, scale = 1,input_scale = 2, numvertex=8):
     all_peaks = []
     peak_counter = 0
     for j in range(vertex2.shape[0]):
-#        belief = vertex2[j].clone()
         belief = copy.deepcopy(vertex2[j])
-#        map_ori = belief.cpu().data.numpy()
         map_ori = belief
         
         map = gaussian_filter(belief, sigma=config_sigma)
@@ -233,9 +231,7 @@ def find_objects(vertex2, aff, scale = 1,input_scale = 2, numvertex=8):
                         and best_dist < objects[i_best][2][i_lists][1]:
                     objects[i_best][1][i_lists] = ((candidate[0])*scale, (candidate[1])*scale)
                     objects[i_best][2][i_lists] = (best_angle, best_dist)
-#    return objects
-#    orig_objects = copy.deepcopy(objects)
-                    
+
     if len(objects) > 0:
         
         for obj in objects:
@@ -257,7 +253,7 @@ def find_objects(vertex2, aff, scale = 1,input_scale = 2, numvertex=8):
             
             else:
                 
-#                scale the vertices coorfinates to original size, check whether some vertex is None and skip that vertex
+                # scale the vertices coorfinates to original size, check whether some vertex is None and skip that vertex
                 for p in range(len(points)):
             
                     if points[p] is not None:
@@ -269,58 +265,7 @@ def find_objects(vertex2, aff, scale = 1,input_scale = 2, numvertex=8):
                 return cuboid2d,objects
             
         return None,None
-                
-            
     else:
-            
         return None,None
     
-    
-    
-#    if len(objects) > 0:
-#        
-#        missing_vertices_array = []
-#        
-#        for obj in objects:
-#            
-#            points = obj[1]
-#            points.append(tuple(obj[0]))
-#            
-#            missing_vertices = 0
-#            
-#            for point in points:
-#                
-#                if point == None:
-#                    
-#                    missing_vertices += 1
-#                    
-#            missing_vertices_array.append(missing_vertices)
-#            
-#            
-#        best_obj = np.argmin(missing_vertices_array)
-#        
-#        if missing_vertices_array[best_obj] >= 5:
-#            
-#            return None,None
-#        
-#        else:
-#            
-#            obj = objects[best_obj] 
-#            
-#            points = obj[1]
-#            points.append(tuple(obj[0]))
-#            
-#            for p in range(len(points)):
-#            
-#                    if points[p] is not None:
-#                        
-#                        points[p] = (points[p][0]*8*input_scale,points[p][1]*8*input_scale)
-#                        
-#            cuboid2d = np.copy(points)
-#            
-#            return cuboid2d,objects                
-#            
-#    else:
-#            
-#        return None,None
 

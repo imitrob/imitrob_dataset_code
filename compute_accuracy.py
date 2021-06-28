@@ -13,7 +13,7 @@ import cv2
 import copy
 import argparse
 import matplotlib.pyplot as plt
-from imitrob_dataset_v3 import imitrob_dataset
+from imitrob_dataset import imitrob_dataset
 from torch.utils.data import Dataset, DataLoader
 from object_detector import find_objects
 from cuboid_PNP_solver import CuboidPNPSolver
@@ -26,7 +26,7 @@ parser.add_argument('--results', type=str, default='', metavar='E',
 parser.add_argument('--target', type=str, default='', metavar='E',
                     help='Path to the target results file')
 args = parser.parse_args()
-.
+
 select_subset = False
 subjects = ['S1','S2','S3','S4']
 cameras = ['C1','C2']

@@ -4,7 +4,6 @@ Created on Mon Oct 12 17:50:52 2020
 
 @author: Mat Tun
 """
-
 import numpy as np
 import pickle
 import os
@@ -13,22 +12,21 @@ import time
 import cv2
 import copy
 import matplotlib.pyplot as plt
-from imitrob_dataset_v3 import imitrob_dataset
-from torch.utils.data import Dataset, DataLoader
+from imitrob_dataset import imitrob_dataset
+from torch.utils.data import DataLoader
 from object_detector import find_objects
 from cuboid_PNP_solver import CuboidPNPSolver
 from dope_network import dope_net
-from error_metrics import rot_trans_err,ADD_error,calculate_AUC
-
+from error_metrics import rot_trans_err, ADD_error, calculate_AUC
 
 parser = argparse.ArgumentParser(description='Compute Accuracy')
-parser.add_argument('--traindata', type=str, default='', 
+parser.add_argument('--traindata', type=str, default='',
                     help='Path to the Train directory of Imitrob')
 parser.add_argument('--testdata', type=str, default='',
                     help='Path to the Test directory of Imitrob')
 parser.add_argument('--bg_path', type=str, default="",
                     help='Path to the backgrounds folder')
-parser.add_argument('--epochs', type=int, default=10, 
+parser.add_argument('--epochs', type=int, default=10,
                     help='Number of epochs to train')
 parser.add_argument('--lr', type=float, default=0.0001,
                     help='Learning rate')
@@ -40,15 +38,17 @@ parser.add_argument('--max_vis', type=int, default=128,
                     help='Maximum .jpg visualizations (output examples) to be saved for test')
 parser.add_argument('--exp_name', type=str, default="",
                     help='Name of the folder were results will be stored. Choose unique name for every experiment')
-parser.add_argument('--mask_type', action='store',choices=['Mask','Mask_thresholding'],type=str,default='Mask',
+parser.add_argument('--mask_type', action='store', choices=['Mask', 'Mask_thresholding'], type=str, default='Mask',
                     help='Choose the type of mask used during training. Mask or Mask_thresholding')
-parser.add_argument('--randomizer_mode', action='store',choices=['none','bbox','overlay','overlay_noise_bg'],type=str,default='overlay',
+parser.add_argument('--randomizer_mode', action='store', choices=['none', 'bbox', 'overlay', 'overlay_noise_bg'],
+                    type=str, default='overlay',
                     help='Choose the type of input augmentation. none,bbox,overlay or overlay_noise_bg')
 parser.add_argument('--num_workers', type=int, default=0,
                     help='Number of dataloader workers. Use 0 for Win')
 parser.add_argument('--gpu_device', type=int, default=0,
                     help='Gpu device to use for training')
-parser.add_argument('--dataset_type', action='store',choices=['gluegun', 'groutfloat', 'roller'],type=str,default='gluegun',
+parser.add_argument('--dataset_type', action='store', choices=['gluegun', 'groutfloat', 'roller'], type=str,
+                    default='gluegun',
                     help='Choose the type of data used in training and testing. gluegun, groutfloat or roller')
 parser.add_argument('--subject', type=str, default="",
                     help='List of subjects to be used for training. All subjects: S1,S2,S3,S4')
@@ -66,23 +66,22 @@ parser.add_argument('--task_test', type=str, default="",
                     help='List of tasks to be used for testing. All tasks: clutter,round,sweep,press,frame,sparsewave,densewave')
 args = parser.parse_args()
 
-
 epochs = args.epochs
 lr = args.lr
 test_examples_fraction_train = 0.
 test_examples_fraction_test = 1.
 batch_size = args.batch_size
 batch_size_test = args.batch_size_test
-max_test_batch =8
+max_test_batch = 8
 
 # maximum .jpg visualizations (output examples) to be saved for test
 max_vis = args.max_vis
 # test_period = 1000
 
-#NOTE: AUC_test_thresh is used to calculate acc after every epoch, AUC_test_thresh_2 is only for information purpuses
+# NOTE: AUC_test_thresh is used to calculate acc after every epoch, AUC_test_thresh_2 is only for information purpuses
 AUC_test_thresh = 0.02
 AUC_test_thresh_2 = 0.1
-AUC_test_thresh_range = [0.,0.1]
+AUC_test_thresh_range = [0., 0.1]
 
 dataset_type = args.dataset_type
 
@@ -92,10 +91,10 @@ mask_type = args.mask_type
 
 randomizer_mode = args.randomizer_mode
 
-randomization_prob = 0.75 
+randomization_prob = 0.75
 photo_bg_prob = 1.
 
-#sets the number of workers for dataloader, set to 0 for windows
+# sets the number of workers for dataloader, set to 0 for windows
 num_workers = args.num_workers
 
 dataset_path_train = args.traindata
@@ -105,23 +104,21 @@ bg_path = args.bg_path
 # original images have size (848x480), network input has size (848/input_scale,480/input_scale)
 input_scale = 2
 
-#use sigma = 2 and radius = 2 for 424x240, use sigma = 4 and radius = 4 for 848x480
+# use sigma = 2 and radius = 2 for 424x240, use sigma = 4 and radius = 4 for 848x480
 sigma = 2
 radius = 2
 
 gpu_device = args.gpu_device
 
-#test_set_selection = 'fraction'/'subset' if 'fraction' - all types of images are selected for training and
-#random fraction of are selected as a test set, if 'subset' - specify which types of images
-#are selected for train and test, spoecify in lists below
+# test_set_selection = 'fraction'/'subset' if 'fraction' - all types of images are selected for training and
+# random fraction of are selected as a test set, if 'subset' - specify which types of images
+# are selected for train and test, spoecify in lists below
 test_set_selection = 'subset'
 
-#determine what parts of dataset to include
+
+# determine what parts of dataset to include
 def proc_args(inp):
-    
-    inp = list(inp.strip('[]').split(','))
-    
-    return inp
+    return list(inp.strip('[]').split(','))
 
 # all subjects: ['S1','S2','S3','S4']
 # all cameras: [C1,C2]
@@ -130,60 +127,49 @@ def proc_args(inp):
 # all object types: ['gluegun', 'groutfloat', 'roller']
 
 dataset_subset = ['Train']
-subject = proc_args(args.subject)            
+subject = proc_args(args.subject)
 camera = proc_args(args.camera)
 task = ['random']
 hand = proc_args(args.hand)
 object_type = [dataset_type]
 
 dataset_subset_test = ['Test']
-subject_test = proc_args(args.subject_test)            
+subject_test = proc_args(args.subject_test)
 camera_test = proc_args(args.camera_test)
 task_test = proc_args(args.task_test)
 hand_test = proc_args(args.hand_test)
 object_type_test = [dataset_type]
 
+attributes_train = [dataset_subset, subject, camera, task, hand, object_type, mask_type]
+attributes_test = [dataset_subset_test, subject_test, camera_test, task_test, hand_test, object_type_test, mask_type]
 
-attributes_train = [dataset_subset,subject,camera,task,hand,object_type,mask_type]
-attributes_test = [dataset_subset_test,subject_test,camera_test,task_test,hand_test,object_type_test,mask_type]
+# initialize network
+net = dope_net(lr, gpu_device)
 
-#initialize network
-net = dope_net(lr,gpu_device)
+dataset = imitrob_dataset(dataset_path_train, bg_path, 'train', test_set_selection,
+                          randomizer_mode, mask_type, True, True, test_examples_fraction_train,
+                          attributes_train, attributes_test,
+                          randomization_prob, photo_bg_prob,
+                          input_scale, sigma, radius)
 
-#dataset = imitrob_dataset(dataset_path,'train',test_set_selection,test_examples_fraction,[move,subjects,camera,trial],[move_test,subjects_test,camera_test,trial_test]) 
-#dataset = imitrob_dataset(dataset_path,'train',test_set_selection,test_examples_fraction,attributes_train,attributes_test,randomization_prob,input_scale,sigma,radius)
+dataset_test = imitrob_dataset(dataset_path_test, bg_path, 'test', test_set_selection,
+                               randomizer_mode, mask_type, False, False, test_examples_fraction_test,
+                               attributes_train, attributes_test,
+                               0., 0.,
+                               input_scale, sigma, radius)
 
-dataset = imitrob_dataset(dataset_path_train,bg_path,'train',test_set_selection,
-                          randomizer_mode,mask_type,True,True,test_examples_fraction_train,
-                          attributes_train,attributes_test,
-                          randomization_prob,photo_bg_prob,
-                          input_scale,sigma,radius)
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+dataloader_test = DataLoader(dataset_test, batch_size=batch_size_test, shuffle=True, num_workers=num_workers)
 
-dataset_test = imitrob_dataset(dataset_path_test,bg_path,'test',test_set_selection,
-                          randomizer_mode,mask_type,False,False,test_examples_fraction_test,
-                          attributes_train,attributes_test,
-                          0.,0.,
-                          input_scale,sigma,radius)
-
-dataloader = DataLoader(dataset, batch_size=batch_size,shuffle=True, num_workers=num_workers)
-dataloader_test = DataLoader(dataset_test, batch_size=batch_size_test,shuffle=True, num_workers=num_workers)
-
-#dataset_defoults = dataset.get_dataset_defoults()
-
-#pnp_cuboid_vertices = np.concatenate((dataset_defoults['bb3d_defoult'],dataset_defoults['centroid3d_defoult']))
-
-#pnp_solver = CuboidPNPSolver(camera_intrinsic_matrix = dataset_defoults['internal_calibration_matrix'],
-#                             cuboid3d = pnp_cuboid_vertices)
-
-#create log folder in results folder and write training info into log file
+# create log folder in results folder and write training info into log file
 cwd = os.getcwd()
 
-logs_dir = os.path.join(cwd,'results')
-    
+logs_dir = os.path.join(cwd, 'results')
+
 currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
 logdir = os.path.join(logs_dir, experiment_name)
 os.makedirs(logdir)
-os.chdir(logdir)                        
+os.chdir(logdir)
 f = open('logfile_' + currenttime + '.txt', 'w')
 f.write('dataset type : ' + dataset_type + '\n')
 f.write('test set selection mode : ' + test_set_selection + '\n')
@@ -198,41 +184,39 @@ f.write('learning rate : ' + str(lr) + '\n')
 f.write('batch size : ' + str(batch_size) + '\n')
 f.write('test batch size : ' + str(batch_size_test) + '\n')
 f.write('========================================================' + '\n')
-f.write('Training started at:' + (time.strftime("%Y_%m_%d___%H_%M_%S") +'\n'))
+f.write('Training started at:' + (time.strftime("%Y_%m_%d___%H_%M_%S") + '\n'))
 f.write('========================================================' + '\n')
 
 
-#draw one bounding box onto an image
-def draw_box3d(image_file,vertices,centroid,line_thicness,color = (255,0,0)):
-    
-    vertices = vertices[[1,3,2,0,5,7,6,4],:]
-                    
-    order = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]
-    
-    vertices = vertices[order,:]
-    
+# draw one bounding box onto an image
+def draw_box3d(image_file, vertices, centroid, line_thicness, color=(255, 0, 0)):
+    vertices = vertices[[1, 3, 2, 0, 5, 7, 6, 4], :]
+
+    order = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
+
+    vertices = vertices[order, :]
+
     for i in range(len(vertices)):
-        
-        correct_vertex_1 = [vertices[i,0,0],vertices[i,0,1]]
-        correct_vertex_2 = [vertices[i,1,0],vertices[i,1,1]]
-        
-           
-        if i<4:
-            
+
+        correct_vertex_1 = [vertices[i, 0, 0], vertices[i, 0, 1]]
+        correct_vertex_2 = [vertices[i, 1, 0], vertices[i, 1, 1]]
+
+        if i < 4:
+
             image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
-            
+
         else:
-            
+
             image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
-    
+
     #    draw centroid circle
-            
-    image = cv2.circle(image_file,tuple(centroid[0,:]),line_thicness,color,-1)
-    
+
+    image = cv2.circle(image_file, tuple(centroid[0, :]), line_thicness, color, -1)
+
     return image
 
 
-#main train loop
+# main train loop
 
 best_acc = 0.
 # log performance parameters after every test
@@ -243,32 +227,25 @@ rot_errors_log = []
 ADD_errors_log = []
 AUC_acc_log = []
 
-
 timestamp_start = time.time()
 
 for i in range(epochs):
-    
+
     avg_train_loss = []
 
-#    dataset.switch_mode('train')
-    
     for train_batch in enumerate(dataloader):
-        
         train_images = train_batch[1]['image']
         train_affinities = train_batch[1]['affinities']
         train_beliefs = train_batch[1]['belief_img']
-        
-        loss = net.train(train_images,train_affinities,train_beliefs)
-        
-        avg_train_loss.append(loss)
-        
 
-#    dataset.switch_mode('test')
+        loss = net.train(train_images, train_affinities, train_beliefs)
+
+        avg_train_loss.append(loss)
 
     test_batch_no = 0
 
     for test_batch in enumerate(dataloader_test):
-        
+
         test_images = test_batch[1]['image']
         test_affinities = test_batch[1]['affinities']
         test_beliefs = test_batch[1]['belief_img']
@@ -277,197 +254,169 @@ for i in range(epochs):
         RTT_matrix = test_batch[1]['six_dof'].numpy()
         bb3d = test_batch[1]['bb3d'].numpy()
         centroid3d = test_batch[1]['centroid3d'].numpy()
-        
-#        defoult parameters, can be different for different objects
-        bb3d_defoult = test_batch[1]['bb3d_defoult'].numpy()
-        centroid3d_defoult = test_batch[1]['centroid3d_defoult'].numpy()
+
+        # default parameters, can be different for different objects
+        bb3d_default = test_batch[1]['bb3d_default'].numpy()
+        centroid3d_default = test_batch[1]['centroid3d_default'].numpy()
         internal_calibration_matrix = test_batch[1]['internal_calibration_matrix'].numpy()
-        
+
         images = test_batch[1]['image_orig'].numpy()
-        
-            #        run test images through network
-        belief,affinity,loss = net.test(test_images,test_affinities,test_beliefs)
-        
-    #        clip the range of output belief images between 0 and 1, slightly helps the performance of object_detector
-        belief = belief.clip(min=0.,max=1.)
-        
+
+        # run test images through network
+        belief, affinity, loss = net.test(test_images, test_affinities, test_beliefs)
+
+        # clip the range of output belief images between 0 and 1, slightly helps the performance of object_detector
+        belief = belief.clip(min=0., max=1.)
+
         if test_batch_no == 0:
-            
+
             belief_test = copy.deepcopy(belief)
             affinity_test = copy.deepcopy(affinity)
             loss_test = loss
-            
+
             original_images = copy.deepcopy(images)
             bb2d_gt = copy.deepcopy(bb2d)
             cent2d_gt = copy.deepcopy(cent2d)
             RTT_matrix_gt = copy.deepcopy(RTT_matrix)
             bb3d_gt = copy.deepcopy(bb3d)
             centroid3dgt = copy.deepcopy(centroid3d)
-            
-            bb3d_defoult_gt = copy.deepcopy(bb3d_defoult)
-            centroid3d_defoult_gt = copy.deepcopy(centroid3d_defoult)
-            internal_calibration_matrix_gt = copy.deepcopy(internal_calibration_matrix)
-            
-        else:
-            
-            belief_test = np.concatenate((belief_test,belief),axis=0)
-            affinity_test = np.concatenate((affinity_test,affinity),axis=0)
-            loss_test += loss
-            
-            original_images = np.concatenate((original_images,images),axis=0)
-            bb2d_gt = np.concatenate((bb2d_gt,bb2d),axis=0)
-            cent2d_gt = np.concatenate((cent2d_gt,cent2d),axis=0)
-            RTT_matrix_gt = np.concatenate((RTT_matrix_gt,RTT_matrix),axis=0)
-            bb3d_gt = np.concatenate((bb3d_gt,bb3d),axis=0)
-            centroid3dgt = np.concatenate((centroid3dgt,centroid3d),axis=0)
-            
-            bb3d_defoult_gt = np.concatenate((bb3d_defoult_gt,bb3d_defoult),axis=0)
-            centroid3d_defoult_gt = np.concatenate((centroid3d_defoult_gt,centroid3d_defoult),axis=0)
-            internal_calibration_matrix_gt = np.concatenate((internal_calibration_matrix_gt,internal_calibration_matrix),axis=0)
-            
-        
-        if test_batch_no == (max_test_batch-1):
-            
-            loss_test = loss_test/max_test_batch
-            
-            break
-        
-        test_batch_no += 1
-        
 
-    
+            bb3d_default_gt = copy.deepcopy(bb3d_default)
+            centroid3d_default_gt = copy.deepcopy(centroid3d_default)
+            internal_calibration_matrix_gt = copy.deepcopy(internal_calibration_matrix)
+
+        else:
+
+            belief_test = np.concatenate((belief_test, belief), axis=0)
+            affinity_test = np.concatenate((affinity_test, affinity), axis=0)
+            loss_test += loss
+
+            original_images = np.concatenate((original_images, images), axis=0)
+            bb2d_gt = np.concatenate((bb2d_gt, bb2d), axis=0)
+            cent2d_gt = np.concatenate((cent2d_gt, cent2d), axis=0)
+            RTT_matrix_gt = np.concatenate((RTT_matrix_gt, RTT_matrix), axis=0)
+            bb3d_gt = np.concatenate((bb3d_gt, bb3d), axis=0)
+            centroid3dgt = np.concatenate((centroid3dgt, centroid3d), axis=0)
+
+            bb3d_default_gt = np.concatenate((bb3d_default_gt, bb3d_default), axis=0)
+            centroid3d_default_gt = np.concatenate((centroid3d_default_gt, centroid3d_default), axis=0)
+            internal_calibration_matrix_gt = np.concatenate(
+                (internal_calibration_matrix_gt, internal_calibration_matrix), axis=0)
+
+        if test_batch_no == (max_test_batch - 1):
+            loss_test = loss_test / max_test_batch
+
+            break
+
+        test_batch_no += 1
+
     object_finder_errors = 0
     object_finder_exceptions = 0
-    
-#        make dir inside logdir where bb visualizations will be stored
-    ep_sample_dir = os.path.join(logdir,'Samples_episode_' + str(i))
-    
+
+    # make dir inside logdir where bb visualizations will be stored
+    ep_sample_dir = os.path.join(logdir, 'Samples_episode_' + str(i))
+
     os.makedirs(ep_sample_dir)
-    
-#        lists for calculating avg translation and rotation errors
+
+    # lists for calculating avg translation and rotation errors
     translation_err_list = []
     rotation_err_list = []
     ADD_err_list = []
     AUC_err_list = []
-    
-#        try to find objects form the output of the network
+
+    # try to find objects form the output of the network
     for j in range(len(belief_test)):
-        
-#            try to find objects using the network output
-#            object finder can in small amount of cases throw an exception: IndexError: index 30 is out of bounds for axis 1 with size 30
-#            so far dont know the cause of this error, most probably an bug in the original implementation
 
-        cuboid2d,_ = find_objects(belief_test[j,:,:,:].astype(np.float64),affinity_test[j,:,:,:].astype(np.float64),1,input_scale)
+        # try to find objects using the network output
+        # object finder can in small amount of cases throw an exception: IndexError: index 30 is out of bounds for axis 1 with size 30
+        # so far dont know the cause of this error, most probably an bug in the original implementation
 
+        cuboid2d, _ = find_objects(belief_test[j, :, :, :].astype(np.float64),
+                                   affinity_test[j, :, :, :].astype(np.float64), 1, input_scale)
 
-#        try:
-#        
-#            cuboid2d,_ = find_objects(belief_test[j,:,:,:].astype(np.float64),affinity_test[j,:,:,:].astype(np.float64),1)
-#            
-#        except:
-#                
-#               cuboid2d = None
-#               object_finder_exceptions += 1
-               
-#            if no objects are found or exception occurs skip this particular net output
-#            therefore the errors are calculated only in cases where some object was found
-#            cuboid2d contains the 2d coordinates of bb vertcies + the 2d coordinates of the bb centroid
-#            cuboid2d dimension is (9,2), 8 vertices, last coordinate is the centroid
-#            the order of vertcies is the same as the order in ground truth, which is specified in README.txt file in imitrob_data_organized
-#            the ordering is also specified in object_detector.py
-        
-        
         if cuboid2d is None:
-            
+
             object_finder_errors += 1
-            
+
             translation_err_list.append(10000.)
             rotation_err_list.append(10000.)
             ADD_err_list.append(10000.)
-            
-            continue
-        
-        else:
-        
-#                the data in cuboid2d is in network output resolution (30x40) not the original resolution of data (480x640)
-#                the input to the network is is subsampled to 480/2,640/2 = 240,320
-#                the network then subsamples the input by 8 until it reaches the output
-#                therefore we need to scale the coordinates of bb by 8*2 = 16 if we want to get the coordinates in original input space
-#            cuboid2d = cuboid2d*8*input_scale
-            
-#                use pnp soilver to get the pose
-#                location: [x,y,z]
-#                quaternion: [x,y,z,w]
-#                projected_points (9x2) (DONT USE THIS, sometimes gives incorrect output)
-#                RTT_matrix (3x4)
-            
-#           cv2.solvePnPRansac gives this error on some ocasions: 
-#             File "E:\Python 3 projects\learning_task_from_rgbd_cameras_and_language\DOPE_imitrob_v4\cuboid_PNP_solver.py", line 160, in solve_pnp
-#             rt_matrix = quaternion.matrix33
-#
-#                AttributeError: 'NoneType' object has no attribute 'matrix33'
-            
-            vertices = np.concatenate((bb3d_defoult_gt[j,:,:],centroid3d_defoult_gt[j,:,:]))
-            
-            pnp_solver = CuboidPNPSolver(camera_intrinsic_matrix = internal_calibration_matrix_gt[j,:,:],
-                             cuboid3d = vertices)
-            
-            location, quaternion, projected_points,RTT_matrix = pnp_solver.solve_pnp(cuboid2d)
-            
-            
-            bb_approximation = projected_points[0:8,:]
-            cent_approximation = projected_points[8:9,:]
-            
-            img = original_images[j,:,:,:]             
-            
-#                draw gt bb
-            annotation_image = draw_box3d(img,bb2d_gt[j,:,:].astype(np.float32),cent2d_gt[j,:,:].astype(np.float32),5,(0,255,0))
-#                draw predicted bb
-            annotation_image = draw_box3d(annotation_image,bb_approximation.astype(np.float32),cent_approximation.astype(np.float32),5)
-            
-            if j < max_vis:
 
-#                save visualization
-                cv2.imwrite(os.path.join(ep_sample_dir,'sample_' + str(j) + '.jpg'),cv2.cvtColor(annotation_image, cv2.COLOR_RGB2BGR))
-            
-#                calculate translation and rotation err
-            translation_err,rotation_err = rot_trans_err(RTT_matrix_gt[j,:,:],RTT_matrix)
-#                calculate ADD error
-            ADD_err = ADD_error(bb3d_gt[j,:,:],centroid3dgt[j,:,:],RTT_matrix,bb3d_defoult_gt[j,:,:],centroid3d_defoult_gt[j,:,:])
-            
+            continue
+
+        else:
+            ''' The data in cuboid2d is in network output resolution (30x40), not the original resolution of data (480x640)
+             The input to the network is is subsampled to 480/2,640/2 = 240,320, the network then subsamples the input 
+             by 8, until it reaches the output.Therefore ,we need to scale the coordinates of bb by 8*2 = 16 if we want 
+             to get the coordinates in the original input space.
+             cuboid2d = cuboid2d*8*input_scale
+
+             use pnp soilver to get the pose
+             location: [x,y,z]
+             quaternion: [x,y,z,w]
+             projected_points (9x2) (DONT USE THIS, sometimes gives incorrect output)
+             RTT_matrix (3x4)'''
+
+            vertices = np.concatenate((bb3d_default_gt[j, :, :], centroid3d_default_gt[j, :, :]))
+
+            pnp_solver = CuboidPNPSolver(camera_intrinsic_matrix=internal_calibration_matrix_gt[j, :, :],
+                                         cuboid3d=vertices)
+
+            location, quaternion, projected_points, RTT_matrix = pnp_solver.solve_pnp(cuboid2d)
+
+            bb_approximation = projected_points[0:8, :]
+            cent_approximation = projected_points[8:9, :]
+
+            img = original_images[j, :, :, :]
+
+            # draw gt bb
+            annotation_image = draw_box3d(img, bb2d_gt[j, :, :].astype(np.float32),
+                                          cent2d_gt[j, :, :].astype(np.float32), 5, (0, 255, 0))
+            # draw predicted bb
+            annotation_image = draw_box3d(annotation_image, bb_approximation.astype(np.float32),
+                                          cent_approximation.astype(np.float32), 5)
+
+            if j < max_vis:
+                # save visualization
+                cv2.imwrite(os.path.join(ep_sample_dir, 'sample_' + str(j) + '.jpg'),
+                            cv2.cvtColor(annotation_image, cv2.COLOR_RGB2BGR))
+
+            # calculate translation and rotation err
+            translation_err, rotation_err = rot_trans_err(RTT_matrix_gt[j, :, :], RTT_matrix)
+            # calculate ADD error
+            ADD_err = ADD_error(bb3d_gt[j, :, :], centroid3dgt[j, :, :], RTT_matrix, bb3d_default_gt[j, :, :],
+                                centroid3d_default_gt[j, :, :])
+
             translation_err_list.append(translation_err)
             rotation_err_list.append(rotation_err)
             ADD_err_list.append(ADD_err)
-            
-    
 
-    AUC_acc = calculate_AUC(ADD_err_list,AUC_test_thresh)        
-            
+    AUC_acc = calculate_AUC(ADD_err_list, AUC_test_thresh)
+
     f.write('Object finder errors at epoch : ' + str(i) + ' : ' + str(object_finder_errors) +
             ' Object finder exceptions at epoch : ' + str(i) + ' : ' + str(object_finder_exceptions) +
-            ' train loss : ' + str(sum(avg_train_loss)/len(avg_train_loss)) + 
-            ' test loss : ' + str(loss_test) + 
-            ' translation_err : ' + str(sum(translation_err_list)/len(translation_err_list))+ 
-            ' rotation_err : ' + str(sum(rotation_err_list)/len(rotation_err_list)) + 
-            ' ADD_err : ' + str(sum(ADD_err_list)/len(ADD_err_list)) + 
+            ' train loss : ' + str(sum(avg_train_loss) / len(avg_train_loss)) +
+            ' test loss : ' + str(loss_test) +
+            ' translation_err : ' + str(sum(translation_err_list) / len(translation_err_list)) +
+            ' rotation_err : ' + str(sum(rotation_err_list) / len(rotation_err_list)) +
+            ' ADD_err : ' + str(sum(ADD_err_list) / len(ADD_err_list)) +
             ' AUC_acc : ' + str(AUC_acc) + '\n')
-    
-    train_loss_log.append(sum(avg_train_loss)/len(avg_train_loss))
+
+    train_loss_log.append(sum(avg_train_loss) / len(avg_train_loss))
     test_loss_log.append(loss_test)
-    trans_errors_log.append(sum(translation_err_list)/len(translation_err_list))
-    rot_errors_log.append(sum(rotation_err_list)/len(rotation_err_list))
-    ADD_errors_log.append(sum(ADD_err_list)/len(ADD_err_list))
+    trans_errors_log.append(sum(translation_err_list) / len(translation_err_list))
+    rot_errors_log.append(sum(rotation_err_list) / len(rotation_err_list))
+    ADD_errors_log.append(sum(ADD_err_list) / len(ADD_err_list))
     AUC_acc_log.append(AUC_acc)
-            
+
     f.flush()
-    
-#        if test loss improved comapred to last test, save the current weights of the model
+
+    # if test loss improved comapred to last test, save the current weights of the model
     if AUC_acc >= best_acc:
-        
-        net.save_model(os.path.join(logdir,'checkpoint.pth.tar'))
+        net.save_model(os.path.join(logdir, 'checkpoint.pth.tar'))
         best_acc = AUC_acc
         max_acc_episode = i
-            
+
     print('Epoch : ' + str(i) + ' acc : ' + str(AUC_acc))
 
 

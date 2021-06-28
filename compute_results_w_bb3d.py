@@ -10,7 +10,7 @@ import math
 import pickle
 import os
 from torch.utils.data import Dataset, DataLoader
-from imitrob_dataset_v3 import imitrob_dataset
+from imitrob_dataset import imitrob_dataset
 import argparse
 
 
