@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from imitrob_dataset import imitrob_dataset
 from dope_network import dope_net
 import torch
+import cv2
 
 currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
 timestamp_start = time.time()
@@ -23,7 +24,7 @@ AUC_test_thresh_range = [0., 0.1]
 input_scale = 2
 
 parser = argparse.ArgumentParser(description='Compute Accuracy')
-parser.add_argument('--testdata', type=str, default='/home/gabi/Downloads/imitrob_test/Test',
+parser.add_argument('--testdata', type=str, default='',
                     help='Path to the Test directory of Imitrob')
 parser.add_argument('--bg_path', type=str, default="./miniimagenet",
                     help='Path to the backgrounds folder')
@@ -51,9 +52,25 @@ parser.add_argument('--camera_test', type=str, default="[C1]",
                     help='List of cameras to be used for testing. All cameras: C1,C2')
 parser.add_argument('--hand_test', type=str, default="[RH]",
                     help='List of hands to be used for testing. All hands: LH,RH')
-parser.add_argument('--task_test', type=str, default="[clutter]",
+parser.add_argument('--task_test', type=str, default="[sparsewave]",
                     help='List of tasks to be used for testing. All tasks: clutter,round,sweep,press,frame,sparsewave,densewave')
 
+
+# draw one bounding box onto an image
+def draw_box3d(image_file, vertices, centroid, line_thicness, color=(255, 0, 0)):
+    vertices = vertices[[1, 3, 2, 0, 5, 7, 6, 4], :]
+    order = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
+    vertices = vertices[order, :]
+    for i in range(len(vertices)):
+        correct_vertex_1 = [vertices[i, 0, 0], vertices[i, 0, 1]]
+        correct_vertex_2 = [vertices[i, 1, 0], vertices[i, 1, 1]]
+        if i < 4:
+            image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
+        else:
+            image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
+    #    draw centroid circle
+    image = cv2.circle(image, tuple(centroid[0, :]), line_thicness, color, -1)
+    return image
 
 def proc_args(inp):
     return list(inp.strip('[]').split(','))
@@ -62,6 +79,7 @@ def process_args(args=None):
     if args is None:
         args = parser.parse_args()
     os.makedirs(os.path.join("./", args.exp_name), exist_ok=True)
+    os.makedirs(os.path.join("./", args.exp_name, "samples"), exist_ok=True)
     num_workers = args.num_workers
     subject_test = proc_args(args.subject_test)
     camera_test = proc_args(args.camera_test)
@@ -99,6 +117,7 @@ def compute_loss(output_belief, output_affinities, target_belief, target_affinit
         loss_tmp = ((l - target_affinity) * (l - target_affinity)).mean()
         loss += loss_tmp
     return loss
+
 
 def model_infer(model, test_images, test_affinities, test_beliefs, args):
     """
@@ -199,6 +218,19 @@ def test_batch_iterator(model, dataloader_test, args):
                 translation_err, rotation_err = rot_trans_err(RTT_matrix_gt[j, :, :], RTT_matrix)
                 ADD_err = ADD_error(bb3d_gt[j, :, :], centroid3dgt[j, :, :], RTT_matrix, bb3d_defoult[j, :, :],
                                     centroid3d_defoult[j, :, :])
+                bb_approximation = projected_points[0:8, :]
+                cent_approximation = projected_points[8:9, :]
+
+                img = original_images[j, :, :, :]
+                # draw gt bb
+                annotation_image = draw_box3d(img, bb2d_gt[j, :, :].astype(np.float32),
+                                              cent2d_gt[j, :, :].astype(np.float32), 5, (0, 255, 0))
+                # draw predicted bb
+                annotation_image = draw_box3d(annotation_image, bb_approximation.astype(np.float32),
+                                              cent_approximation.astype(np.float32), 5)
+                if j < args.max_vis:
+                    cv2.imwrite(os.path.join(args.exp_name, 'samples', 'sample_' + str(j) + '.jpg'),
+                                cv2.cvtColor(annotation_image, cv2.COLOR_RGB2BGR))
                 translation_err_list_final.append(translation_err)
                 rotation_err_list_final.append(rotation_err)
                 ADD_err_list_final.append(ADD_err)
