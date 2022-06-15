@@ -18,12 +18,34 @@ Simply cone this repo and install the required Python packages and download the 
 * Training a 6D pose estimator requires the [Imitrob Train](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset and a dataset of background images (for augmentation), e.g., the ImageNet or a subset of it - [mini-ImageNet](https://github.com/yaoyao-liu/mini-imagenet-tools).  
 * Evaluation requires the [Imitrob Test](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset.  
 
+
 ## Usage
+
+The base class for working with the Imitrob dataset is `imitrob_dataset` in [imitrob_dataset.py](imitrob_dataset.py) and it is based on the [PyTorch](https://pytorch.org/docs/stable/data.html) `Dataset` class. As such, it can be easily used to train any PyTorch model via the `DataLoader` class.  
+
+The [trainer.py](trainer.py) file contains an example of using the dataset with the [DOPE](https://github.com/NVlabs/Deep_Object_Pose) pose estimator. The [evaluation.py](evaluation.py) file is used to evaluate an already trained network. Use the training and evaluation scripts as a template to train and test your estimator. In case of a PyTorch model, you will typically only need to assign an instance of your model to the `net` variable, i.e., changing [this line](trainer.py#L361) of the trainer.py file:
+```python
+net = dope_net(lr, gpu_device)  # switch dope_net for your own network
+```
 
 ### Training
 
+The [trainer.py](trainer.py) file performs training (and the evaluation after training, though this can be skipped). The script accepts command line arguments to specify which parts of the dataset should be used. Use this command to see all the possible options and their descriptions:  
+```bash
+$ python trainer.py -h
+```
+
+Here is a condensed summary of the options:  
+```bash
+$ python trainer.py --traindata "path/to/train/data/directory" --testdata "path/to/test/data/directory" --bg_path "path/to/baground/data/directory" --exp_name experiment_1 --randomizer_mode overlay --gpu_device 0 --dataset_type roller --subject [S1,S2,S3] --camera [C1,C2] --hand [LH,RH] --subject_test [S4] --camera_test [C1,C2] --hand_test [LH,RH] --task_test [clutter,round,sweep,press,frame,sparsewave,densewave]
+```
+
 ### Evaluation
 
+The [evaluation.py](evaluation.py) file performs the estimator evaluation. Typically, the trainer.py is used to both train and evaluate the estimator. However, the evaluation can also be performed separately. Similar to the trainer.py, dataset and network settings are passed to the script via a command line. Run the script with a `-h` argument to see the list and description of possible arguments:  
+```bash
+$ python evaluation.py -h
+```
 
 ## License
 
