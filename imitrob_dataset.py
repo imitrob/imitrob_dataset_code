@@ -42,8 +42,8 @@ class imitrob_dataset(Dataset):
             attributes_test (list): A list of parameters to specify which subset of the Imitrob dataset should be used for testing.
                                     The following should be set: [dataset_subset, subject, camera, task, hand, object_type, mask_type].
                                     See the dataset website (http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) for possible options.
-            randomization_prob (float, optional): _description_. Defaults to 0.5.
-            photo_bg_prob (float, optional): _description_. Defaults to 0.5.
+            randomization_prob (float, optional): Determines the probability that green bg is swapped for different bg for each image. Defaults to 0.5.
+            photo_bg_prob (float, optional): Determines the probability that green bg is swapped with random photo, otherwise bg is swapped for random uniform color. Defaults to 0.5.
             scale (int, optional): Scaling of the input images as compared to the network input size. Defaults to 2.
             sigma (int, optional): Sigma used to generate a probability distribution around each bbox point positions. Defaults to 2.
             radius (int, optional): Radius used to generate a probability distribution around each bbox point positions. Defaults to 2.
