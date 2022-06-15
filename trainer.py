@@ -282,6 +282,8 @@ if __name__ == '__main__':
                         help='List of hands to be used for testing. All hands: LH,RH')
     parser.add_argument('--task_test', type=str, default="",
                         help='List of tasks to be used for testing. All tasks: clutter,round,sweep,press,frame,sparsewave,densewave')
+    parser.add_argument('--skip_testing', default=False, action='store_true',
+                        help='If this flag is used, the testing after training will be omitted.')
     args = parser.parse_args()
 
     epochs = args.epochs
@@ -358,14 +360,16 @@ if __name__ == '__main__':
                        mask_type]
 
     # initialize network
-    net = dope_net(lr, gpu_device)
+    net = dope_net(lr, gpu_device)  # switch dope_net for your own network
 
+    # Create Imitrob Train dataset
     dataset = imitrob_dataset(dataset_path_train, bg_path, 'train', test_set_selection,
                               randomizer_mode, mask_type, True, True, test_examples_fraction_train,
                               attributes_train, attributes_test,
                               randomization_prob, photo_bg_prob,
                               input_scale, sigma, radius)
 
+    # Create Imitrob Test dataset
     dataset_test = imitrob_dataset(dataset_path_test, bg_path, 'test', test_set_selection,
                                    randomizer_mode, mask_type, False, False, test_examples_fraction_test,
                                    attributes_train, attributes_test,
@@ -402,4 +406,5 @@ if __name__ == '__main__':
     f.write('========================================================' + '\n')
 
     train()
-    test_model(net.load_model(os.path.join(logdir, 'checkpoint.pth.tar')), args=args)
+    if not args.skip_testing:
+        test_model(net.load_model(os.path.join(logdir, 'checkpoint.pth.tar')), args=args)
