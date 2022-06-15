@@ -9,10 +9,14 @@ This is a supplementary code for the Imitrob dataset located at <http://imitrob.
 
 ## Installation  
 
+Simply cone this repo and install the required Python packages and download the necessary data.  
 
 ### Requirements  
 
-
+* Python packages required to run the code are listed in the [requirements.txt](requirements.txt) file. All required packages can be installed by:  
+`pip install -r requirements.txt`  
+* Training a 6D pose estimator requires the [Imitrob Train](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset and a dataset of background images (for augmentation), e.g., the ImageNet or a subset of it - [mini-ImageNet](https://github.com/yaoyao-liu/mini-imagenet-tools).  
+* Evaluation requires the [Imitrob Test](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset.  
 
 ## Usage
 
