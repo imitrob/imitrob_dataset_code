@@ -17,6 +17,7 @@ Simply cone this repo and install the required Python packages and download the 
 `pip install -r requirements.txt`  
 * Training a 6D pose estimator requires the [Imitrob Train](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset and a dataset of background images (for augmentation), e.g., the ImageNet or a subset of it - [mini-ImageNet](https://github.com/yaoyao-liu/mini-imagenet-tools).  
 * Evaluation requires the [Imitrob Test](http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) dataset.  
+* The scripts were tested on Ubuntu 18.04 and with Python 3.6. Nonetheless, they should run on any platform where PyTorch can be installed and with Python version 3.6 or later.
 
 
 ## Usage
