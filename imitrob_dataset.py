@@ -22,7 +22,34 @@ class imitrob_dataset(Dataset):
 
     def __init__(self, data_path, random_bg_path, mode, sample_selection_mode, randomizer_mode, mask_type, crop, flip,
                  test_examples_fraction, attributes_train, attributes_test, randomization_prob=0.5, photo_bg_prob=0.5,
-                 scale=2, sigma=2, radius=2):
+                 scale=2, sigma=2, radius=2, max_height = 480, max_width = 848):
+        """Creates an instance of the Imitrob dataset (http://imitrob.ciirc.cvut.cz/imitrobdataset.php).
+
+        Args:
+            data_path (str): The path to the dataset.
+            random_bg_path (str): The path to a folder containing images to be used for random background augmentation.
+            mode (str): Dataset mode - 'test' or 'train' (see PyTorch Dataset documentation).
+            sample_selection_mode (str): 'fraction' or 'subset'. If 'fraction' - all types of images are selected for training
+                                        and random fraction of are selected as a test set. If 'subset' - specify which types of images are selected for train and test, specify in lists below.
+            randomizer_mode (str):  Determines the way background is removed from images: none, bbox, overlay or overlay_noise_bg.
+            mask_type (str): The type of mask used during training. 'Mask' or 'Mask_thresholding'.
+            crop (bool): Whether random cropping should be used during randomization.
+            flip (bool): Whether flipping should be used during randomization
+            test_examples_fraction (float): Fraction of the dataset to be used for testing.
+            attributes_train (list): A list of parameters to specify which subset of the Imitrob dataset should be used for training.
+                                    The following should be set: [dataset_subset, subject, camera, task, hand, object_type, mask_type].
+                                    See the dataset website (http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) for possible options.
+            attributes_test (list): A list of parameters to specify which subset of the Imitrob dataset should be used for testing.
+                                    The following should be set: [dataset_subset, subject, camera, task, hand, object_type, mask_type].
+                                    See the dataset website (http://imitrob.ciirc.cvut.cz/imitrobdataset.php#structure) for possible options.
+            randomization_prob (float, optional): _description_. Defaults to 0.5.
+            photo_bg_prob (float, optional): _description_. Defaults to 0.5.
+            scale (int, optional): Scaling of the input images as compared to the network input size. Defaults to 2.
+            sigma (int, optional): Sigma used to generate a probability distribution around each bbox point positions. Defaults to 2.
+            radius (int, optional): Radius used to generate a probability distribution around each bbox point positions. Defaults to 2.
+            max_height (int, optional): Height of the mask. Defaults to 480.
+            max_width (int, optional): Width of the mask. Defaults to 848.
+        """
 
         # mode determines if we want to return test (mode = 'test'), or train (mode='train')
         self.mode = mode
@@ -31,8 +58,8 @@ class imitrob_dataset(Dataset):
         # are selected for train and test, use attributes_train, attributes_test to do that
         self.sample_selection_mode = sample_selection_mode
         self.mask_type = mask_type
-        self.max_height = 480
-        self.max_width = 848
+        self.max_height = max_height
+        self.max_width = max_width
         # randomizer_mode - determines the way background is removed from image
         # - gbg : remove only green screen
         # - bbox : remove all background
@@ -48,7 +75,7 @@ class imitrob_dataset(Dataset):
         self.scale = scale
 
         # important parameter, sets the resolution of ground truth, 8 means that the out resolution
-        # affinity and belief maps is in_resolution/8 
+        # affinity and belief maps is in_resolution/8
         self.gt_scale = 8 * self.scale
         self.sigma = sigma
         self.radius = radius
