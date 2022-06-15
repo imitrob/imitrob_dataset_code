@@ -325,7 +325,11 @@ def main(model, args=None):
 
 
 if __name__ == '__main__':
+    parser.add_argument("model_path", type=str,
+                        default="./results/exp_1/checkpoint.pth.tar",
+                        help="Path to the trained model weights")
+    args = parser.parse_args()
     dope = dope_net(1, 0)
-    dope.load_model("./results/exp_1/checkpoint.pth.tar")
+    dope.load_model(args.model_path)
     print("Model loaded")
-    main(dope.net)
+    main(dope.net, args)
