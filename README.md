@@ -9,7 +9,7 @@ This is a supplementary code for the Imitrob dataset located at <http://imitrob.
 
 ## Installation  
 
-Simply cone this repo and install the required Python packages and download the necessary data.  
+Simply cone this repo, install the required Python packages and download the necessary data.  
 
 ### Requirements  
 
@@ -24,7 +24,7 @@ Simply cone this repo and install the required Python packages and download the 
 
 The base class for working with the Imitrob dataset is `imitrob_dataset` in [imitrob_dataset.py](imitrob_dataset.py) and it is based on the [PyTorch](https://pytorch.org/docs/stable/data.html) `Dataset` class. As such, it can be easily used to train any PyTorch model via the `DataLoader` class.  
 
-The [trainer.py](trainer.py) file contains an example of using the dataset with the [DOPE](https://github.com/NVlabs/Deep_Object_Pose) pose estimator. The [evaluation.py](evaluation.py) file is used to evaluate an already trained network. Use the training and evaluation scripts as a template to train and test your estimator. In case of a PyTorch model, you will typically only need to assign an instance of your model to the `net` variable, i.e., changing [this line](trainer.py#L361) of the trainer.py file:
+The [trainer.py](trainer.py) file contains an example of using the dataset with the [DOPE](https://github.com/NVlabs/Deep_Object_Pose) pose estimator. The [evaluation.py](evaluation.py) file is used to evaluate an already trained network. Use the training and evaluation scripts as a template to train and test your estimator. In case of a PyTorch model, you will typically only need to assign an instance of your model to the `net` variable, i.e., changing [this line](trainer.py#L363) of the trainer.py file:
 ```python
 net = dope_net(lr, gpu_device)  # switch dope_net for your own network
 ```
