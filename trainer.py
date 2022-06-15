@@ -1,8 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 12 17:50:52 2020
+    6D estimator trainer script
+    Copyright (C) 2020  Matus Tuna
 
-@author: Mat Tun
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 import numpy as np
 import os
@@ -149,11 +162,11 @@ def train():
 
             else:
                 ''' The data in cuboid2d is in network output resolution (30x40), not the original resolution of data (480x640)
-                 The input to the network is is subsampled to 480/2,640/2 = 240,320, the network then subsamples the input 
-                 by 8, until it reaches the output.Therefore ,we need to scale the coordinates of bb by 8*2 = 16 if we want 
+                 The input to the network is is subsampled to 480/2,640/2 = 240,320, the network then subsamples the input
+                 by 8, until it reaches the output.Therefore ,we need to scale the coordinates of bb by 8*2 = 16 if we want
                  to get the coordinates in the original input space.
                  cuboid2d = cuboid2d*8*input_scale
-    
+
                  use pnp soilver to get the pose
                  location: [x,y,z]
                  quaternion: [x,y,z,w]
