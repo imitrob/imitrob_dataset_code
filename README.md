@@ -40,7 +40,7 @@ The [trainer.py](trainer.py) file performs training (and the evaluation after tr
 $ python trainer.py -h
 ```
 
-Here is a condensed summary of the options:  
+Here is an example of executing the trainer.py script with a condensed summary of the options:  
 ```bash
 $ python trainer.py --traindata "path/to/train/data/directory"
                     --testdata "path/to/test/data/directory"
@@ -58,6 +58,8 @@ $ python trainer.py --traindata "path/to/train/data/directory"
                     --task_test [clutter,round,sweep,press,frame,sparsewave,densewave]
 ```
 
+The list notation (multiple items in square brackets, e.g., `[XX,YY,ZZ]`) is used to specify multiple options for a given argument. For example, `--camera [C1,C2]` tells the script to use images from both the `C1` and `C2` cameras.
+
 ### Evaluation
 
 The [evaluation.py](evaluation.py) file performs the estimator evaluation. Typically, the trainer.py script is used to both train and evaluate the estimator. However, the evaluation can also be performed separately. Similar to the trainer.py, dataset and network settings are passed to the script via the command line. Run the script with the `-h` argument to see the list and description of possible arguments:  
@@ -65,11 +67,16 @@ The [evaluation.py](evaluation.py) file performs the estimator evaluation. Typic
 $ python evaluation.py -h
 ```
 
+We provide example weights for DOPE [here](https://data.ciirc.cvut.cz/public/groups/incognite/Imitrob/test_net_weights.zip). The weights are trained for the _glue gun_ tool only, using the following configuration:  
+```bash
+python trainer.py --traindata "Imitrob\Train" --testdata "Imitrob\Test" --bg_path "mini_imagenet_dataset\images" --epochs 5 --exp_name experiment_5 --randomizer_mode overlay --gpu_device 0 --dataset_type gluegun --subject [S1,S2,S3,S4] --camera [C1,C2] --hand [LH,RH] --subject_test [S1,S2,S3,S4] --camera_test [C1,C2] --hand_test [LH,RH] --task_test [clutter,round,sweep,press,frame,sparsewave,densewave]
+```
+
 ## License
 
 This code is published under the [CC BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).  
 
-If you use this code in your research, please, give as an attribution, using the following citation:
+If you use this code in your research, please, give us an attribution, using the following citation:
 
   
 ```BibTex
@@ -85,6 +92,7 @@ If you use this code in your research, please, give as an attribution, using the
 ## Acknowledgment
 
 Part of this work is based on the code of [NVidia Deep Object Pose](https://github.com/NVlabs/Deep_Object_Pose) ([paper](https://arxiv.org/abs/1809.10790)).
+We also used the [mini-ImageNet library](https://github.com/yaoyao-liu/mini-imagenet-tools) (proposed in the paper [Matching Networks for One Shot Learning](https://proceedings.neurips.cc/paper/2016/file/90e1357833654983612fb05e3ec9148c-Paper.pdf)) to generate the background images in our benchmarks
 
 ## Contact
 
