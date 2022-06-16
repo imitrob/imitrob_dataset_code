@@ -1,21 +1,4 @@
-"""
-    6D evaluation script
-    Copyright (C) 2021 Imitrob group
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
+# -*- coding: utf-8 -*-
 import numpy as np
 import pickle
 import os
@@ -31,6 +14,7 @@ from imitrob_dataset import imitrob_dataset
 from dope_network import dope_net
 import torch
 import cv2
+
 
 currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
 timestamp_start = time.time()
@@ -328,7 +312,7 @@ if __name__ == '__main__':
     parser.add_argument("model_path", type=str,
                         default="./results/exp_1/checkpoint.pth.tar",
                         help="Path to the trained model weights")
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
     net = dope_net(1, 0)
     net.load_model(args.model_path)
     print("Model loaded")

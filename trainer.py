@@ -1,22 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    6D estimator trainer script
-    Copyright (C) 2020  Matus Tuna
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
 import numpy as np
 import os
 import argparse
@@ -31,6 +13,7 @@ from dope_network import dope_net
 from error_metrics import rot_trans_err, ADD_error, calculate_AUC
 from evaluation import main as test_model
 from evaluation import draw_box3d
+
 
 def train():
     # main train loop
