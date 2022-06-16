@@ -296,7 +296,7 @@ class imitrob_dataset(Dataset):
         rot_quat_xyzw[0:3] = rot_quat[1:4]
         rot_quat_xyzw[3] = rot_quat[0]
 
-        rot_mat = R.from_quat(rot_quat_xyzw).as_dcm()
+        rot_mat = R.from_quat(rot_quat_xyzw).as_matrix()
         six_dof = np.concatenate((rot_mat, trans_vec[:, np.newaxis]), axis=1)
 
         # transform six_dof to correct format (is stored as camera to tracker)
