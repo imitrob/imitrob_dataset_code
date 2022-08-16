@@ -33,6 +33,8 @@ net = dope_net(lr, gpu_device)  # switch dope_net for your own network
 
 Similar change has to be done in the evaluation.py script.
 
+The data acquisition process is described in [this readme file](data_acquisition.md).
+
 ### Training
 
 The [trainer.py](trainer.py) file performs training (and the evaluation after training, though this can be skipped). The script accepts command line arguments to specify which parts of the dataset should be used. Use help invocation command to see all the possible options and their descriptions:  
@@ -72,6 +74,14 @@ We provide example weights for DOPE [here](https://data.ciirc.cvut.cz/public/gro
 $ python trainer.py --traindata "Imitrob\Train" --testdata "Imitrob\Test" --bg_path "mini_imagenet_dataset\images" --epochs 5 --exp_name experiment_5 --randomizer_mode overlay --gpu_device 0 --dataset_type gluegun --subject [S1,S2,S3,S4] --camera [C1,C2] --hand [LH,RH] --subject_test [S1,S2,S3,S4] --camera_test [C1,C2] --hand_test [LH,RH] --task_test [clutter,round,sweep,press,frame,sparsewave,densewave]
 ```  
 These can be used to run the evaluation.py script.
+
+If you develop and evaluate your own model on our dataset, we would really appreciate if you send us your results. We will include them in the leaderboard below.
+
+| Method | training configuration | testing configuration | metric | results |
+|:---:|:---|:---|:---:|---:|
+| DOPE (original)  | full ImitrobTrain | full ImitrobTest | ADD5 |   |
+|   |   |   |   |   |
+|   |   |   |   |   |
 
 ## License
 
