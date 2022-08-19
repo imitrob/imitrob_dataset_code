@@ -83,13 +83,33 @@ If you develop and evaluate your own model on our dataset, we would really appre
 |   |   |   |   |   |
 |   |   |   |   |   |
 
+
+## Dataset extension - new tools
+
+[Data acquisition tutorial](data_acquisition/README.md) (codes, docker, sample data)
+
+We provide methods for the acquisition of training data for a new tool.
+
+First, mount a tracker on the tool and prepare a tracing tool with mounted tracker.
+
+Afterwards follow the steps to calibrate the data acquisition setup as well as calibrating the bounding box for the tool.
+
+<img src="data_acquisition/trace-extractor/images/trace_workflow.png" width="1000"/>
+-
+
+Now you can  record data for the manipulated object while manipulating it in front of the green background. 6DoF positions are extracted and objects segmentation masks are created.  
+
+https://user-images.githubusercontent.com/17249817/185711525-d843e1ba-f15c-4c0c-bc9c-3b83eaa505a7.mp4
+
+Individual steps with corresponding codes and sample data are described in [Data acquisition tutorial](data_acquisition/README.md).
+
 ## License
 
 This code is published under the [CC BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).  
 
 If you use this code in your research, please, give us an attribution, using the following citation:
 
-  
+
 ```BibTex
  @Misc{imitrobdataset,
   author =   {{CIIRC CTU in Prague}},
