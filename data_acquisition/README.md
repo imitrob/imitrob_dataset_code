@@ -1,6 +1,7 @@
 # Data Acquistion
 
-Description coming soon...
+Data calibration and extraction codes and documentation will be added until 25.8.
+We provide docker installation and instructions for acquiring the bounding box for a new tool.
 
 ## 1) Data collection
 
@@ -23,3 +24,5 @@ We provide a docker installation for the method, sample data and ipython noteboo
 
 
 ### 3b) Processing the extracted images
+
+https://user-images.githubusercontent.com/17249817/185711525-d843e1ba-f15c-4c0c-bc9c-3b83eaa505a7.mp4
