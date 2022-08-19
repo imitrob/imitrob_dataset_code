@@ -33,7 +33,7 @@ net = dope_net(lr, gpu_device)  # switch dope_net for your own network
 
 Similar change has to be done in the evaluation.py script.
 
-The data acquisition process is described in [this readme file](data_acquisition.md).
+The data acquisition process is described in [this readme file](data_acquisition/README.md).
 
 ### Training
 

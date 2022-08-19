@@ -1,0 +1,6 @@
+Dockerfile
+run.sh
+.dockerignore
+.gitignore
+.git
+data
