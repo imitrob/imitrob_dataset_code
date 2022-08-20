@@ -1,8 +1,8 @@
 FROM ros:noetic-ros-base-buster
 
-RUN apt update -y && apt upgrade -y
+RUN apt-get update -y && apt-get upgrade -y
 
-RUN apt install -y \
+RUN apt-get install -y \
   graphviz \
   jupyter \
   libgl1-mesa-dev \
@@ -19,18 +19,17 @@ RUN apt install -y \
   wget \
   && :
 
-RUN pip3 install spatialmath-python trimesh
+RUN pip3 install spatialmath-python trimesh pyglet
 
 WORKDIR /tmp
 
-ENV ANACONDA=Anaconda3-2022.05-Linux-x86_64
-RUN wget https://repo.anaconda.com/archive/$ANACONDA.sh
-RUN bash ./$ANACONDA.sh -b -p /root/anaconda
-COPY conda_env.txt conda_env.txt
-RUN /root/anaconda/bin/conda create --name tracer --file conda_env.txt
+# ENV ANACONDA=Anaconda3-2022.05-Linux-x86_64
+# RUN wget https://repo.anaconda.com/archive/$ANACONDA.sh
+# RUN bash ./$ANACONDA.sh -b -p /root/anaconda
+# COPY conda_env.txt conda_env.txt
+# RUN /root/anaconda/bin/conda create --name tracer --file conda_env.txt
 
 WORKDIR /root/tracer
 COPY . .
 
 #RUN cat dot_bashrc >> /root/.bashrc
-
