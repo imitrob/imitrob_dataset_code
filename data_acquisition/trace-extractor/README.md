@@ -32,11 +32,14 @@ Here we provide a docker installation for the method, sample data and ipython no
 
 Make sure you have Docker installed and are in a `docker` group. [Docker Installation Details](https://wiki.archlinux.org/title/docker#Installation)
 
+```bash
+cd <ImitRobBaseDir>/data_acquisition/trace_extractor
+./get_sample_data.sh  # this downloads a sample bag file and extracts it to the directory data
+```
+
 ### Quickstart - Demo
 
 ```bash
-git clone git@gitlab.ciirc.cvut.cz:hajekric/trace-extractor.git --recursive
-cd trace-extractor
 ./run.sh
 ```
 
@@ -49,9 +52,6 @@ Run each cell in the given order to load and analyze the trace data.
 ## Quickstart - Your own
 
 ```bash
-git clone git@gitlab.ciirc.cvut.cz:hajekric/trace-extractor.git
-cd trace-extractor
 # Place your data in data folder, create it if it doesn't exit
 ./run.sh # You will have to change paths in the notebook
 ```
-
