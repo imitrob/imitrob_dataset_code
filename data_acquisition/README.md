@@ -45,7 +45,7 @@ roslaunch cam_calib rs_multiple_devices.launch
 ```
 rosrun cam_calib tf_to_pose.py _target_frame:=<tracked_frame_name>
 ```
-Tracked frame will be something like "tracker_LHR_786752BF"
+Tracked frame will be something like "tracker_LHR_786752BF" (factory preset tracker name)
 
 5. Start calibration tool
 ```
@@ -54,9 +54,14 @@ rosrun cam_calib calibrator.py
 
 ## Calibration tool
 
+Prerequisites:
+* calibration checker board
+* 2x ArUco markers (helps to recognize checker board origin for multiple cameras)
+* a spike mounted to an HTC Vive tracker (please, see the related paper for more details)
+
 ### Camera <-> board calibration
 
-First, cameras need to be added. You can click **Add** button to add a camera. Select image topic on the left side of the window and CameraInfo topic on the right side of the window. Alternatively, if a setup was saved previously, you can click **Load** or **Load last setup** button to load the previous setup. Afterwards, each camera should be calibrated by clicking **calibrate** button.  
+First, cameras need to be added. You can click **Add** button to add a camera. Select image topic on the left side of the window and CameraInfo topic on the right side of the window. Alternatively, if a setup was saved previously, you can click **Load** or **Load last setup** button to load the previous setup. Afterwards, each camera should be calibrated by clicking **calibrate** button (extrinsic param. calibration board -> camera) .  
 **Make sure the board is visible from both cameras and uncovered. Also, the markers should be around the first corner**  
 Sometimes, the markers might not be recognized and the board will not be detected or the board frame will be detected incorrectly. Check visually from the camera image and re-apply calibration if necessary.
 
@@ -80,6 +85,11 @@ Click **Calibrate** button to start the pose calibration process.
 
 ## 2) Object tracing
 
+To be able to provide the reference bounding boxes for the new tool, we first have to find the bounding boxes of the manipulated objects relative to the tracker.
+
+<img src="./trace-extractor/images/trace_workflow.png" width="1000"/>
+
+We provide a docker installation for the method, sample data and ipython notebook where individual steps are demonstrated. For details see the [Trace extractor README.md](./trace-extractor/README.md)
 
 
 ## 3) Data extraction
@@ -89,3 +99,5 @@ Click **Calibrate** button to start the pose calibration process.
 
 
 ### 3b) Processing the extracted images
+
+https://user-images.githubusercontent.com/17249817/185711525-d843e1ba-f15c-4c0c-bc9c-3b83eaa505a7.mp4
