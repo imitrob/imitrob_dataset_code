@@ -1,0 +1,14 @@
+<launch>
+	<arg name="cam_space"/>
+	<arg name="node_name" default="pose_estimator"/>
+	<arg name="image_raw" default="image_raw"/> 
+	<arg name="image" default="image_rect_color/compressed"/>
+	<arg name="cinfo" default="camera_info"/> 
+	<group ns="$(arg cam_space)">
+		<node pkg="image_proc" type="image_proc" name="image_proc"/>
+		<node pkg="cam_calib" type="cam_pose_estimator.py" name="$(arg node_name)" output="screen">
+			<param name="image" value="$(arg image)"/>
+			<param name="cinfo" value="$(arg cinfo)"/>
+		</node>
+	</group>
+</launch>

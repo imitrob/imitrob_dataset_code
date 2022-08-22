@@ -1,0 +1,47 @@
+<launch>
+    <arg name="compress"    		default="true"/>
+
+    <param name="use_sim_time" value="false"/>
+    <node if="$(arg compress)" type="record" pkg="rosbag" name="rec_imit" args="
+        -o '$(find data_acquisition)/data/bag'
+        --buffsize=4096 --chunksize=256
+
+        /HMD/pose
+        /WM0/pose
+        /WM1/pose
+        /camera1/color/camera_info
+        /camera1/color/image_raw/compressed
+        /camera1/depth/camera_info
+        /camera1/depth/image_rect_raw
+        /camera1/aligned_depth_to_color/image_raw
+        /camera2/color/camera_info
+        /camera2/color/image_raw/compressed
+        /camera2/depth/camera_info
+        /camera2/depth/image_rect_raw
+        /camera2/aligned_depth_to_color/image_raw
+        /tf
+        /tf_static
+        " output="screen"/>
+
+    <node unless="$(arg compress)" type="record" pkg="rosbag" name="rec_imit" args="
+        -o '$(find data_acquisition)/data/bag'
+        --buffsize=4096 --chunksize=256
+
+        /HMD/pose
+        /WM0/pose
+        /WM1/pose
+        /camera1/color/camera_info
+        /camera1/color/image_raw
+        /camera1/depth/camera_info
+        /camera1/depth/image_rect_raw
+        /camera1/aligned_depth_to_color/image_raw
+        /camera2/color/camera_info
+        /camera2/color/image_raw
+        /camera2/depth/camera_info
+        /camera2/depth/image_rect_raw
+        /camera2/aligned_depth_to_color/image_raw
+        /tf
+        /tf_static
+        " output="screen"/>
+</launch>
+

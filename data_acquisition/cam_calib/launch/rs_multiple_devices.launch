@@ -1,0 +1,69 @@
+<launch>
+    <arg name="serial_no_camera1"    		default="831612072296"/> 			<!-- Note: Replace with actual serial number -->
+    <arg name="serial_no_camera2"    		default="920312070562"/> 			<!-- Note: Replace with actual serial number -->
+    <arg name="camera1"              		default="camera1"/>		<!-- Note: Replace with camera name -->
+    <arg name="camera2"              		default="camera2"/>		<!-- Note: Replace with camera name -->
+    <arg name="tf_prefix_camera1"           default="$(arg camera1)"/>
+    <arg name="tf_prefix_camera2"           default="$(arg camera2)"/>
+    <arg name="initial_reset"               default="false"/>
+    <arg name="color_width"                 default="848"/>
+    <arg name="color_height"                default="480"/>
+    <arg name="depth_width"                 default="848"/>
+    <arg name="depth_height"                default="480"/>
+    <arg name="enable_depth"                default="true"/>
+    <arg name="enable_color"                default="true"/>
+    <arg name="depth_fps"                   default="60"/>
+    <!-- <arg name="infra_fps"                   default="30"/> -->
+    <arg name="color_fps"                   default="60"/>
+
+    <group ns="$(arg camera1)">
+        <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+            <arg name="serial_no"               value="$(arg serial_no_camera1)"/>
+            <arg name="tf_prefix"               value="$(arg tf_prefix_camera1)"/>
+            <arg name="initial_reset"           value="$(arg initial_reset)"/>
+
+            <arg name="depth_width"             value="$(arg depth_width)"/>
+            <arg name="depth_height"            value="$(arg depth_height)"/>
+            <arg name="enable_depth"            value="$(arg enable_depth)"/>
+
+            <arg name="color_width"             value="$(arg color_width)"/>
+            <arg name="color_height"            value="$(arg color_height)"/>
+            <arg name="enable_color"            value="$(arg enable_color)"/>
+            <arg name="align_depth"             value="true"/>
+
+            <arg name="depth_fps"               value="$(arg depth_fps)"/>
+            <arg name="color_fps"               value="$(arg color_fps)"/>
+        </include>
+
+    </group>
+    <node name="dynamic_reconfigure_load_rgb_$(arg camera1)" pkg="dynamic_reconfigure" type="dynparam"
+        args="load $(arg camera1)/rgb_camera $(find cam_calib)/params/rs_config_rgb.yaml" />
+    <node name="dynamic_reconfigure_load_depth_$(arg camera1)" pkg="dynamic_reconfigure" type="dynparam"
+        args="load $(arg camera1)/stereo_module $(find cam_calib)/params/rs_config_depth.yaml" />
+
+    <group ns="$(arg camera2)">
+        <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+            <arg name="serial_no"               value="$(arg serial_no_camera2)"/>
+            <arg name="tf_prefix"               value="$(arg tf_prefix_camera2)"/>
+            <arg name="initial_reset"           value="$(arg initial_reset)"/>
+
+            <arg name="depth_width"             value="$(arg depth_width)"/>
+            <arg name="depth_height"            value="$(arg depth_height)"/>
+            <arg name="enable_depth"            value="$(arg enable_depth)"/>
+
+            <arg name="color_width"             value="$(arg color_width)"/>
+            <arg name="color_height"            value="$(arg color_height)"/>
+            <arg name="enable_color"            value="$(arg enable_color)"/>
+            <arg name="align_depth"             value="true"/>
+
+            <arg name="depth_fps"               value="$(arg depth_fps)"/>
+            <arg name="color_fps"               value="$(arg color_fps)"/>
+        </include>
+    </group>
+    <node name="dynamic_reconfigure_load_rgb_$(arg camera2)" pkg="dynamic_reconfigure" type="dynparam"
+        args="load $(arg camera2)/rgb_camera $(find cam_calib)/params/rs_config_rgb.yaml" />
+    <node name="dynamic_reconfigure_load_depth_$(arg camera2)" pkg="dynamic_reconfigure" type="dynparam"
+        args="load $(arg camera2)/stereo_module $(find cam_calib)/params/rs_config_depth.yaml" />
+
+
+</launch>
