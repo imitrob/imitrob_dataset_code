@@ -74,15 +74,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("tool-name", choices=['gluegun', 'hammer', 'gluegun', 'roller'], help="Name of the tool to be processed.")
     parser.add_argument("data-folder", type=str, help="Path to the folder containing the extracted recordings.")
-
     parser.add_argument("--recompute-bg-values", action="store_true", default=False, help="Instead of loading BG RGB data from file, recompute them.")
     parser.add_argument('--remove-hand', action='store_true', default=False, help='Remove also the hand from the mask.')
-
-    parser.add_argument('--overwrite-existing', action='store_true', default=False, help='Overwrite existing masking outputs.')
-    parser.add_argument('--border-width', type=int, default=11)
-    parser.add_argument('--fba-path', type=str, default=None, help='Path to the cloned FBA Matting repository. Do not specify if this script is being run from within the repo folder.')
-    parser.add_argument('--weights-absolute', action='store_true', default=False, help="Use this flag to specify absolute path to the FBA weights.")
-    parser.add_argument('--fba-weights', type=str, default='FBA.pth', help='Path to the FBA weights. By default relative to the FBA repository.')
     args = parser.parse_args()
 
     tool_name = args.tool_name
