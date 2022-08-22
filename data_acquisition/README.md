@@ -25,7 +25,7 @@ These steps are described in detail in the following.
 
 Assuming you have created and built a ROS 1 workspace with this package and the packages mentioned above.
 
-### Starting the HTC Vive and camera(s)
+### 1a) Starting the HTC Vive and camera(s)
 
 1) Start HTC Vive  
   ```
@@ -39,7 +39,7 @@ roslaunch cam_calib rs_multiple_devices.launch
 ```  
 ...or use your own camera launcher, specific to your setup.
 
-### Camera calibration
+### 1b) Camera calibration
 
 4. Run TF -> Pose message Node
 ```
@@ -52,12 +52,19 @@ Tracked frame will be something like "tracker_LHR_786752BF" (factory preset trac
 rosrun cam_calib calibrator.py
 ```
 
-## Calibration tool
+### Calibration tool (calibrator.py) usage
 
 Prerequisites:
-* calibration checker board
+* calibration checker board (8x6; cell size 72mm, can be adjusted in [calibrator.py](cam_calib/src/calibrator.py))
 * 2x ArUco markers (helps to recognize checker board origin for multiple cameras)
-* a spike mounted to an HTC Vive tracker (please, see the related paper for more details)
+  * Markers can be generate with OpenCV with the following dictionary parameters (any marker with this params will work):
+  > (nMarkers=48, markerSize=4, seed=65536)
+* a spike mounted to an HTC Vive tracker (please, see the related paper for more details)  
+
+### Summary  
+
+The calibration checkerboard should be placed on a table with the ArUco markers placed on the board origin (arbitrary but consistent during recordings). The markers are used to solve the ambiguity of the checkerboard origin.  
+Afterwards, the camera extrinsics are auto-calibrated, then the board to Vive calibration is performed. It relies on pinpointing the checkerboard corners within the HTC Vive coordinate frame. This is done by collecting half-spheres by sticking a spike with a tracker on its end into each corner. The end of the spike with the tracker is rotated while the other end is kept at the board corner. We recommend using a plexiglass with a dent to protect the table and make the spike more stable.
 
 ### Camera <-> board calibration
 
@@ -82,6 +89,9 @@ Hitting space above an already collected corner will erase currently collected p
 After collecting enough points, you can save them by clicking the **Save points** button. These can be loaded later using the **Load points** button.
 Click **Calibrate** button to start the pose calibration process.
 
+###  1c) Recording the data
+
+Normal ROS [bagfile recording](http://wiki.ros.org/rosbag/Commandline) can be used to record the data. For convenience, we provide a [launchfile](cam_calib/launch/rec_data_sixdof.launch) that can be modified to suit your specific setup (the default is configured to use topics in our setup).
 
 ## 2) Object tracing
 
@@ -94,9 +104,16 @@ We provide a docker installation for the method, sample data and ipython noteboo
 
 ## 3) Data extraction
 
-
 ### 3a) Extracting images from the bag files
 
+To extract a dataset from the bag file(s), use the [extract_data_from_bag_BB.py](extraction/extract_data_from_bag_BB.py) script. It takes pairs of arguments <bagfile_path> & <tool_calibration_path> (from object tracing) and a range of arguments to specify relevant topic names. Default values for our setup are provided.
+
+To use this script, ROS 1 must be installed and sourced (the script uses for example _rospy_ and _tf_ libraries from ROS 1)
+
+Example usage:  
+```bash
+$ python extract_data_from_bag_BB.py some_bagfile.bag some_calibration_file.csv
+```
 
 ### 3b) Processing the extracted images
 
