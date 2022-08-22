@@ -117,4 +117,6 @@ $ python extract_data_from_bag_BB.py some_bagfile.bag some_calibration_file.csv
 
 ### 3b) Processing the extracted images
 
+The extracted data needs to be processed to extract the masking annotations.
+
 https://user-images.githubusercontent.com/17249817/185711525-d843e1ba-f15c-4c0c-bc9c-3b83eaa505a7.mp4
