@@ -125,7 +125,7 @@ The extracted training data (recorded over the green screen) needs to be process
    * if empty background image is not available, prepare also `C{1,2}_mask_bg_safe.png` files: 255 = pixel always green, 0 = outside cloth or not green in some frames in the `Image/` folder
 2) Compute masks using thresholding by running the script [mask_thresholding.py](masking/mask_thresholding.py). The script accepts arguments specifying whether hand should be removed, etc. Use the flag `--help` to see more information about possible arguments.
 3) Compute mask refinement using the F, B, Alpha Matting method via the script [mask2rgba.py](masking/mask2rgba.py).
-See CLI help for the script to see information about available arguments.
+See CLI help for the script to see information about available arguments. This script requires code from the [FBA Matting method repository](https://github.com/MarcoForte/FBA_Matting). Clone the code and either run the [mask2rgba.py](masking/mask2rgba.py) script from inside the main repository folder or specify path to the (cloned) repository as an argument.
 
 The script [bbox_visualize.py](masking/bbox_visualize.py) can be used to visualize the bounding box projections in individual images.
 
