@@ -117,6 +117,18 @@ $ python extract_data_from_bag_BB.py some_bagfile.bag some_calibration_file.csv
 
 ### 3b) Processing the extracted images
 
-The extracted data needs to be processed to extract the masking annotations.
+The extracted training data (recorded over the green screen) needs to be processed to compute a pixel-wise segmentation of the foreground vs. background, i.e., the tool mask. The mask is use for background augmentation during training. To compute the mask the following steps need to be performed:
+
+1) Prepare a `compute_bg_{gluegun, groutfloat, hammer, roller}/` folder:
+   * copy empty green background images for C1 and C2  to `Image/` subfolder
+   * prepare `C{1,2}_mask_bg.png` files: 255 = inside green cloth, 0 = elsewhere
+   * if empty background image is not available, prepare also `C{1,2}_mask_bg_safe.png` files: 255 = pixel always green, 0 = outside cloth or not green in some frames in the `Image/` folder
+2) Compute masks using thresholding by running the script [mask_thresholding.py](masking/mask_thresholding.py). The script accepts arguments specifying whether hand should be removed, etc. Use the flag `--help` to see more information about possible arguments.
+3) Compute mask refinement using the F, B, Alpha Matting method via the script [mask2rgba.py](masking/mask2rgba.py).
+See CLI help for the script to see information about available arguments.
+
+The script [bbox_visualize.py](masking/bbox_visualize.py) can be used to visualize the bounding box projections in individual images.
+
+Below is a visualization of the results from collection and postprocessing of the data
 
 https://user-images.githubusercontent.com/17249817/185711525-d843e1ba-f15c-4c0c-bc9c-3b83eaa505a7.mp4

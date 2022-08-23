@@ -76,12 +76,14 @@ if __name__ == '__main__':
     parser.add_argument("data-folder", type=str, help="Path to the folder containing the extracted recordings.")
     parser.add_argument("--recompute-bg-values", action="store_true", default=False, help="Instead of loading BG RGB data from file, recompute them.")
     parser.add_argument('--remove-hand', action='store_true', default=False, help='Remove also the hand from the mask.')
+    parser.add_argument('--tolerance', type=float, default=10, help='Tolerance factor, must be 10 or higher.')
     args = parser.parse_args()
 
     tool_name = args.tool_name
     path_bg = 'compute_bg_{}'.format(tool_name)  # Folder for computation of background.
     bg_rgb_values_from_file = not args.recompute_bg_values  # False == recompute.
     remove_hand = args.remove_hand  # False == keep hand. True == mask out hand.
+    factor = args.tolerance
 
     path = args.data_folder
     folder_list = get_list_of_folders(path, sort=True)
@@ -134,7 +136,6 @@ if __name__ == '__main__':
         #print(np.shape(hull_points))  # number of convex hull vertices
 
         # Add tolerance to bg values
-        factor = 10  # TODO
         bg_mean = np.mean(bg_rgb_values, 0)
         d = hull_points - bg_mean
         d = (d.T / np.linalg.norm(d, axis=1)).T
