@@ -20,12 +20,16 @@ from tf.transformations import quaternion_matrix, quaternion_from_matrix, transl
 import tf
 from numpy import genfromtxt
 from scipy.spatial import ConvexHull, Delaunay
+import yaml
+import warnings
 
 
 class myBagTransformer(object):
-    def __init__(self, path, bagName):
+
+    def __init__(self, path, bagName, frames):
         self.bag = rosbag.Bag(os.path.join(path, bagName), "r")
         self.bag_transformer = BagTfTransformer(self.bag)
+        self.frames = frames
 
     def lookupTransform(self, orig_frame, dest_frame, t):
         trans, rot = self.bag_transformer.lookupTransform(orig_frame=orig_frame, dest_frame=dest_frame,
@@ -39,8 +43,8 @@ class myBagTransformer(object):
         count = 0
         for topic, msg, t in self.bag.read_messages(topics=['/tf']):
             if count != 1:
-                if msg.transforms[0].header.frame_id == args.world_frame:
-                    if msg.transforms[0].child_frame_id == args.board_frame:
+                if msg.transforms[0].header.frame_id == self.frames['world_frame']:
+                    if msg.transforms[0].child_frame_id == self.frames['board_frame']:
                         print(msg)
                         trans = np.array([msg.transforms[0].transform.translation.x,
                                            msg.transforms[0].transform.translation.y,
@@ -59,7 +63,7 @@ class myBagTransformer(object):
         Crot = np.empty([1,4],dtype = float)
         for topic, msg, t in self.bag.read_messages(topics=['/tf']):
             if count1 != 1:
-                if msg.transforms[0].header.frame_id == args.board_frame:
+                if msg.transforms[0].header.frame_id == self.frames['board_frame']:
                     if msg.transforms[0].child_frame_id == topicC:
                         print(msg)
                         Ctran = np.array([msg.transforms[0].transform.translation.x,
@@ -132,7 +136,9 @@ def get_pose_interpolator(messages, source, target, max_interpolation_time=0.1):
         for transform in msg.transforms:  # type: TransformStamped
             # if not isinstance(transform, TransformStamped):
             #     continue
-            assert isinstance(transform, TransformStamped)
+            # assert isinstance(transform, TransformStamped), f"The transform has type {type(transform)} instead of a {TransformStamped}!"
+            if not isinstance(transform, TransformStamped):
+                warnings.warn(f"The transform has type {type(transform)} instead of a {TransformStamped}!")
             if transform.header.frame_id == source and transform.child_frame_id == target:
                 tf_msgs.append(transform)
 
@@ -165,10 +171,34 @@ def get_pose_interpolator(messages, source, target, max_interpolation_time=0.1):
 
 def main(args):
     inputNames = [(bag, calib) for bag, calib in zip(args.input[::2], args.input[1::2])]
-    camera1_color_topic = args.camera1_color
-    camera1_detph_topic = args.camera1_detph
-    camera2_color_topic = args.camera2_color
-    camera2_detph_topic = args.camera2_detph
+    topics = {}
+    topics['camera1_color'] = args.camera1_color
+    topics['camera1_depth'] = args.camera1_depth
+    topics['camera2_color'] = args.camera2_color
+    topics['camera2_depth'] = args.camera2_depth
+    topics['camera1_info'] = args.camera1_info
+    topics['camera2_info'] = args.camera2_info
+
+    frames = {}
+    frames['camera1_optical'] = args.camera1_optical
+    frames['camera2_optical'] = args.camera2_optical
+    frames['world_frame'] = args.world_frame
+    frames['board_frame'] = args.board_frame
+    frames['tracker_frame'] = args.tracker_frame
+
+    config_file = args.config
+    if len(config_file) > 0:
+        if not os.path.exists(config_file):
+            raise UserWarning(f'Config file for topics provided but it does not exist: {config_file}')
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+        if 'topics' in config:
+            for topic_name, topic_path in config['topics'].items():
+                topics[topic_name] = topic_path
+        if 'frames' in config:
+            for frame_name, frame_path in config['frames'].items():
+                frames[frame_name] = frame_path
+
 
     diff_threshold = 0.02
     try:  # solving compatibility issues between ROS versions:
@@ -209,28 +239,28 @@ def main(args):
 
         bag = rosbag.Bag(os.path.join(path, bagName), "r")
 
-        mbt = myBagTransformer(path, bagName)
-        RtWorldToCam1 = mbt.world_to_camera(args.camera1_optical)
-        RtWorldToCam2 = mbt.world_to_camera(args.camera2_optical)
+        mbt = myBagTransformer(path, bagName, frames)
+        RtWorldToCam1 = mbt.world_to_camera(frames['camera1_optical'])
+        RtWorldToCam2 = mbt.world_to_camera(frames['camera2_optical'])
 
         print('RtWorldToCam1', RtWorldToCam1)
         print('RtWorldToCam2', RtWorldToCam2)
 
         # pose interpolation function for htc vive poses
         msg = [msg for topic, msg, t in bag.read_messages('/tf')]
-        pose_interp = get_pose_interpolator(msg, args.world_frame, args.tracker_frame)
+        pose_interp = get_pose_interpolator(msg, frames['world_frame'], frames['tracker_frame'])
 
 
         bridge = CvBridge()
         count = 0
         output_folder = os.path.join(path, bagName[0:-4])
 
-        for _, msg, _ in bag.read_messages(args.camera1_info):
+        for _, msg, _ in bag.read_messages(topics['camera1_info']):
             _K1 = np.array(msg.K).reshape((3, 3))
             break
         print(f"C1 camera matrix:\n{_K1}")
 
-        for _, msg, _ in bag.read_messages(args.camera2_info):
+        for _, msg, _ in bag.read_messages(topics['camera2_info']):
             _K2 = np.array(msg.K).reshape((3, 3))
             break
         print(f"C2 camera matrix:\n{_K2}")
@@ -245,9 +275,9 @@ def main(args):
             pass
 
         x = []
-        gend = bag.read_messages(camera1_detph_topic)
-        gend2 = bag.read_messages(camera2_detph_topic)
-        genI2 = bag.read_messages(camera2_color_topic)
+        gend = bag.read_messages(topics['camera1_depth'])
+        gend2 = bag.read_messages(topics['camera2_depth'])
+        genI2 = bag.read_messages(topics['camera2_color'])
         d = list(gend)
         d = np.array(d)
         i2 = list(genI2)
@@ -255,15 +285,15 @@ def main(args):
         d2 = list(gend2)
         d2 = np.array(d2)
         dtime = np.array([rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs) for topic, msg, t in
-                          bag.read_messages(camera1_detph_topic)])
+                          bag.read_messages(topics['camera1_depth'])])
         d2time = np.array([rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs) for topic, msg, t in
-                          bag.read_messages(camera2_detph_topic)])
+                          bag.read_messages(topics['camera2_depth'])])
         i2time = np.array([rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs) for topic, msg, t in
-                          bag.read_messages(camera2_color_topic)])
+                          bag.read_messages(topics['camera2_color'])])
 
         print("Found {} timestamps in the bag.".format(len(dtime)))
 
-        for _, msg, t in bag.read_messages(topics=camera1_color_topic):
+        for _, msg, t in bag.read_messages(topics=topics['camera1_color']):
             refTime=rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs)
             messageIndexD = np.argmin(np.abs(dtime - rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs)))
             diff = abs(dtime[messageIndexD] - rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs))
@@ -274,12 +304,21 @@ def main(args):
 
             if diff < diff_threshold and diff2 < diff_threshold and diff3 < diff_threshold:
                 # image data saving
-                cv_image1 = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                if args.compressed:
+                    cv_image1 = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                else:
+                    cv_image1 = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
                 fname1 = bagfName + 'C1' + "F%04i.png" % count
+                print(os.path.join(output_folder + "/Image/", fname1))
+                print('-----')
+                print(cv_image1.shape)
                 cv2.imwrite(os.path.join(output_folder + "/Image/", fname1), cv_image1)
 
                 img2_msg = i2[messageIndexI2][1]
-                cv_image2 = bridge.compressed_imgmsg_to_cv2(img2_msg, desired_encoding="passthrough")
+                if args.compressed:
+                    cv_image2 = bridge.compressed_imgmsg_to_cv2(img2_msg, desired_encoding="passthrough")
+                else:
+                    cv_image2 = bridge.imgmsg_to_cv2(img2_msg, desired_encoding="passthrough")
                 fname2 = bagfName + 'C2' + "F%04i.png" % count
                 cv2.imwrite(os.path.join(output_folder + "/Image/", fname2), cv_image2)
 
@@ -527,6 +566,10 @@ if __name__ == '__main__':
     parser.add_argument('--world-frame', '--wf', type=str, default='world_vive', help="ROS (coordinate) frame of the HTC Vive (main frame).")
     parser.add_argument('--tracker-frame', '--tf', type=str, default="tracker_LHR_786752BF", help="ROS (coordinate) frame of the HTC Vive (main frame).")
     parser.add_argument('--board-frame', '--bf', type=str, default='board', help="ROS (coordinate) frame of the calibration checker board.")
+
+    parser.add_argument("--config", type=str, default="", help="Configuration YAML file with topic names and frames (overwrites other arguments).")
+
+    parser.add_argument("--compressed", action="store_true", help="Assume the images are in compressed format (use compressed_imgmsg_... method).")
 
     args = parser.parse_args()
     input_nargs = len(args.input)
