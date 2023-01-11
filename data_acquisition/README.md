@@ -23,7 +23,12 @@ These steps are described in detail in the following.
 
 ## 1) Data collection
 
-Assuming you have created and built a ROS 1 workspace with this package and the packages mentioned above.
+Assuming you have created and built a ROS 1 workspace with this package and the packages mentioned above.  
+* HTC Vive publishing frequency can be adjusted before building by changing the number (originally _30_) at this line:
+```
+VIVEnode nodeApp(30);
+```
+at the end of `src/vive_node.cpp` (typical HTC Vive update rate is 60 Hz).
 
 ### 1a) Starting the HTC Vive and camera(s)
 
