@@ -22,6 +22,7 @@ from numpy import genfromtxt
 from scipy.spatial import ConvexHull, Delaunay
 import yaml
 import warnings
+from copy import deepcopy
 
 
 class myBagTransformer(object):
@@ -200,7 +201,7 @@ def main(args):
                 frames[frame_name] = frame_path
 
 
-    diff_threshold = 0.02
+    diff_threshold = 0.035
     try:  # solving compatibility issues between ROS versions:
         diff_threshold = rospy.Duration(diff_threshold)
     except:
@@ -527,7 +528,8 @@ def main(args):
                         bbox_dict = dataBB[frame]["BBox_2D_{}".format(camera)]
                         bbox_array = [[vert["v"], vert["u"]] for k, vert in bbox_dict.items()]
                         bbox_array = np.asarray(np.round(bbox_array), int)
-                        img = eval("cv_image{}".format(cc))[:, :, ::-1]
+
+                        img = deepcopy(eval("cv_image{}".format(cc))[:, :, ::-1])
                         img = highlight_bbox(img, bbox_array)
                         h, w = np.shape(img)[:2]
                         for bv in range(8):
