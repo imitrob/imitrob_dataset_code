@@ -30,6 +30,5 @@ WORKDIR /tmp
 # RUN /root/anaconda/bin/conda create --name tracer --file conda_env.txt
 
 WORKDIR /root/tracer
-# COPY . .
 
 #RUN cat dot_bashrc >> /root/.bashrc
