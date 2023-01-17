@@ -1,14 +1,14 @@
 topics:
-  camera1_color:    /scene_camera/color/image_raw/
-  camera1_depth:    /scene_camera/depth/image_rect_raw
-  camera1_info:     /scene_camera/color/camera_info
-  camera2_color:    /panda_camera/color/image_raw/
-  camera2_depth:    /panda_camera/depth/image_rect_raw
-  camera2_info:     /panda_camera/color/camera_info
+  camera1_color:    /front_camera/color/image_raw/
+  camera1_depth:    /front_camera/depth/image_rect_raw
+  camera1_info:     /front_camera/color/camera_info
+  camera2_color:    /right_camera/color/image_raw/
+  camera2_depth:    /right_camera/depth/image_rect_raw
+  camera2_info:     /right_camera/color/camera_info
 
 frames:
-  camera1_optical:  scene_camera_color_optical_frame
-  camera2_optical:  panda_camera_color_optical_frame
+  camera1_optical:  front_camera_color_optical_frame
+  camera2_optical:  right_camera_color_optical_frame
   world_frame:      world_vive
   tracker_frame:    tracker_LHR_5E1AEA9F
   board_frame:      board
