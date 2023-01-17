@@ -42,7 +42,8 @@ from numba import jit
 
 class ViveTraceAnalyzer(object):
     def __init__(self, tool_tracker='tracker_LHR_1D894210'):
-        self.trackers = ['tracker_LHR_1D894210', 'tracker_LHR_786752BF']
+        self.trackers = []
+        print(f"I found the following trackers in the bag file: {self.trackers}")
         self.graph = None
         self.t_start = None
         self.folder = None
@@ -109,6 +110,9 @@ class ViveTraceAnalyzer(object):
 
         # calibrate the tool tracker... assumes that there are ONLY 2 trackers. The tool tracker is the one which moves
         # relative to the end_point
+        self.trackers = [name for name in bag_transformer.getFrameStrings() if 'tracker_LHR' in name]
+        print(f"I found the following trackers in the bag file: {self.trackers}")
+                
         idx1 = int(len(bag_transformer.tf_times)/4)
         t1, t2 = bag_transformer.tf_times[[idx1, idx1*2]]
         for tracker in self.trackers:
