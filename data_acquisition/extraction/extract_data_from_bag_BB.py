@@ -27,6 +27,7 @@ from copy import deepcopy
 HTC_TO_IMAGE_OFFSET = 0  # in seconds (previously -0.17)
 MAX_IMAGE_INTER_MSG_DIFF = 0.02 # sec, max allowed difference between various image messages
 MAX_INTERPOLATION_TIME = 0.1  # sec, max allowed time for which the interpolation will work (otherwise, frame is dropped)
+COLOR_IMAGE_DESIRED_ENCODING = "bgr8"  # choose 'bgr8' or 'rgb8' to achieve the desired image output
 
 class myBagTransformer(object):
 
@@ -303,9 +304,9 @@ def main(args):
             if diff < diff_threshold and diff2 < diff_threshold and diff3 < diff_threshold:
                 # image data saving
                 if args.compressed:
-                    cv_image1 = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                    cv_image1 = bridge.compressed_imgmsg_to_cv2(msg, desired_encoding=args.color_image_desired_encoding)
                 else:
-                    cv_image1 = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+                    cv_image1 = bridge.imgmsg_to_cv2(msg, desired_encoding=args.color_image_desired_encoding)
                 fname1 = bagfName + 'C1' + "F%04i.png" % count
                 print(os.path.join(output_folder + "/Image/", fname1))
                 print('-----')
@@ -314,9 +315,9 @@ def main(args):
 
                 img2_msg = i2[messageIndexI2][1]
                 if args.compressed:
-                    cv_image2 = bridge.compressed_imgmsg_to_cv2(img2_msg, desired_encoding="passthrough")
+                    cv_image2 = bridge.compressed_imgmsg_to_cv2(img2_msg, desired_encoding=args.color_image_desired_encoding)
                 else:
-                    cv_image2 = bridge.imgmsg_to_cv2(img2_msg, desired_encoding="passthrough")
+                    cv_image2 = bridge.imgmsg_to_cv2(img2_msg, desired_encoding=args.color_image_desired_encoding)
                 fname2 = bagfName + 'C2' + "F%04i.png" % count
                 cv2.imwrite(os.path.join(output_folder + "/Image/", fname2), cv_image2)
 
@@ -569,6 +570,7 @@ if __name__ == '__main__':
     parser.add_argument("--htc-to-image-offset", "--htc-offset", type=float, default=HTC_TO_IMAGE_OFFSET, help=f"Time offset between HTC pose and image messages, if any. Default = {HTC_TO_IMAGE_OFFSET}")
     parser.add_argument("--max-image-inter-msg-diff", "--inter-img-diff", type=float, default=MAX_IMAGE_INTER_MSG_DIFF, help=f"Max allowed time difference between images from different cameras. Default = {MAX_IMAGE_INTER_MSG_DIFF}")
     parser.add_argument("--max-interpolation-time", "--max-interp", type=float, default=MAX_INTERPOLATION_TIME, help=f"Max time difference between pose messages that can be interpolated. Default = {MAX_INTERPOLATION_TIME}")
+    parser.add_argument("--color-image-desired-encoding", "--color-encoding", type=str, default=COLOR_IMAGE_DESIRED_ENCODING, help=f"Desired color format for the images. Typically 'rgb8' or 'bgr8'. Change this if the color channels in the output images are swapped. Default = {COLOR_IMAGE_DESIRED_ENCODING}")
 
     args = parser.parse_args()
     input_nargs = len(args.input)
