@@ -24,6 +24,9 @@ import yaml
 import warnings
 from copy import deepcopy
 
+HTC_TO_IMAGE_OFFSET = 0  # in seconds (previously -0.17)
+MAX_IMAGE_INTER_MSG_DIFF = 0.02 # sec, max allowed difference between various image messages
+MAX_INTERPOLATION_TIME = 0.1  # sec, max allowed time for which the interpolation will work (otherwise, frame is dropped)
 
 class myBagTransformer(object):
 
@@ -131,7 +134,7 @@ def highlight_bbox(img, bbox_array):
     return img
 
 
-def get_pose_interpolator(messages, source, target, max_interpolation_time=0.1):
+def get_pose_interpolator(messages, source, target, max_interpolation_time):
     tf_msgs = []
     for msg in messages:
         for transform in msg.transforms:  # type: TransformStamped
@@ -200,17 +203,14 @@ def main(args):
             for frame_name, frame_path in config['frames'].items():
                 frames[frame_name] = frame_path
 
+    htc_delay = rospy.Duration.from_sec(args.htc_to_image_offset)
+    diff_threshold = rospy.Duration.from_sec(args.max_image_inter_msg_diff)
 
-    diff_threshold = 0.035
-    try:  # solving compatibility issues between ROS versions:
-        diff_threshold = rospy.Duration(diff_threshold)
-    except:
-        diff_threshold = rospy.Duration(nsecs=int(diff_threshold * 1e9))
     colors = [[  0,255,  0,255,  0,255,  0,255,127],
               [  0,  0,255,255,  0,  0,255,255,127],
               [  0,  0,  0,  0,255,255,255,255,127]]
     borders = [0, 0, 0, 0, 0, 0, 0, 0]
-    bbox_radius = 6
+    bbox_radius = 6  # pixel size of the little squares visualizing the BBox corners
 
     tools = ('gluegun', 'grout','hammer','roller') # set of tools, name of the tool should be in the file name (if new one used, add to the end of the list)
     subjects = ('R','J','K','G') # set of subjects - if there is a new one, add to the end, name of the subject should be in the file name
@@ -249,7 +249,7 @@ def main(args):
 
         # pose interpolation function for htc vive poses
         msg = [msg for topic, msg, t in bag.read_messages('/tf')]
-        pose_interp = get_pose_interpolator(msg, frames['world_frame'], frames['tracker_frame'])
+        pose_interp = get_pose_interpolator(msg, frames['world_frame'], frames['tracker_frame'], max_interpolation_time=args.max_interpolation_time)
 
 
         bridge = CvBridge()
@@ -266,14 +266,11 @@ def main(args):
             break
         print(f"C2 camera matrix:\n{_K2}")
 
-        try:  # else already exist
-            os.makedirs(output_folder + "/Image")
-            os.makedirs(output_folder + "/Depth")
-            os.makedirs(output_folder + "/6DOF")
-            os.makedirs(output_folder + "/BBox")
-            os.makedirs(output_folder + "/BBox_visualization")
-        except:
-            pass
+        os.makedirs(output_folder + "/Image", exist_ok=True)
+        os.makedirs(output_folder + "/Depth", exist_ok=True)
+        os.makedirs(output_folder + "/6DOF", exist_ok=True)
+        os.makedirs(output_folder + "/BBox", exist_ok=True)
+        os.makedirs(output_folder + "/BBox_visualization", exist_ok=True)
 
         x = []
         gend = bag.read_messages(topics['camera1_depth'])
@@ -337,13 +334,11 @@ def main(args):
                 cv2.imwrite(os.path.join(output_folder + "/Depth/", bagfName + 'C2' + "F%04i.png" % count),depth2)
 
                 # 6DOF saving
-                common_time1 = refTime - rospy.Duration.from_sec(0.17)
+                common_time1 = refTime + htc_delay
                 try:
                     p = pose_interp(common_time1.to_sec())
                 except ValueError as e:
-                    print(e)
-                    # print('Skipping image')
-                    print("Skipped image %i" % count)
+                    print(f"Skipped image {count} - error interpolating missing pose:\n{e}")
                     count += 1
                     continue
 
@@ -425,14 +420,12 @@ def main(args):
                 tracker_to_camera1_translation = []
 
                 try:
-                    common_time = refTime - rospy.Duration.from_sec(0.17)
-
-                    common_time = refTime  - rospy.Duration.from_sec(0.17)
+                    common_time = refTime + htc_delay
                     try:
                         p = pose_interp(common_time.to_sec())
                     except ValueError as e:
                         print(e)
-                        print("Skipped image %i" % count)
+                        print(f"Skipped image {count} - error interpolating missing pose:\n{e}")
 
                         count += 1
                         continue
@@ -547,7 +540,7 @@ def main(args):
 
                 print ("Wrote image %i" % count)
             else:
-                print( "Skipped image %i" % count)
+                print(f"Skipped image {count} - time difference between images from cameras is too large.")
 
             count += 1
         bag.close()
@@ -569,9 +562,13 @@ if __name__ == '__main__':
     parser.add_argument('--tracker-frame', '--tf', type=str, default="tracker_LHR_786752BF", help="ROS (coordinate) frame of the HTC Vive (main frame).")
     parser.add_argument('--board-frame', '--bf', type=str, default='board', help="ROS (coordinate) frame of the calibration checker board.")
 
-    parser.add_argument("--config", type=str, default="", help="Configuration YAML file with topic names and frames (overwrites other arguments).")
+    parser.add_argument("--config", type=str, default="", help="Configuration YAML file with topic names and frames (overwrites other topic and frame name arguments).")
 
     parser.add_argument("--compressed", action="store_true", help="Assume the images are in compressed format (use compressed_imgmsg_... method).")
+
+    parser.add_argument("--htc-to-image-offset", "--htc-offset", type=float, default=HTC_TO_IMAGE_OFFSET, help=f"Time offset between HTC pose and image messages, if any. Default = {HTC_TO_IMAGE_OFFSET}")
+    parser.add_argument("--max-image-inter-msg-diff", "--inter-img-diff", type=float, default=MAX_IMAGE_INTER_MSG_DIFF, help=f"Max allowed time difference between images from different cameras. Default = {MAX_IMAGE_INTER_MSG_DIFF}")
+    parser.add_argument("--max-interpolation-time", "--max-interp", type=float, default=MAX_INTERPOLATION_TIME, help=f"Max time difference between pose messages that can be interpolated. Default = {MAX_INTERPOLATION_TIME}")
 
     args = parser.parse_args()
     input_nargs = len(args.input)
