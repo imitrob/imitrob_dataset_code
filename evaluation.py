@@ -60,18 +60,18 @@ parser.add_argument('--task_test', type=str, default="[sparsewave]",
 
 # draw one bounding box onto an image
 def draw_box3d(image_file, vertices, centroid, line_thicness, color=(255, 0, 0)):
-    vertices = vertices[[1, 3, 2, 0, 5, 7, 6, 4], :]
+    vertices = vertices[[1, 3, 2, 0, 5, 7, 6, 4], :].astype(int)
     order = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
     vertices = vertices[order, :]
     for i in range(len(vertices)):
-        correct_vertex_1 = [vertices[i, 0, 0], vertices[i, 0, 1]]
-        correct_vertex_2 = [vertices[i, 1, 0], vertices[i, 1, 1]]
+        correct_vertex_1 = (vertices[i, 0, 0], vertices[i, 0, 1])
+        correct_vertex_2 = (vertices[i, 1, 0], vertices[i, 1, 1])
         if i < 4:
             image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
         else:
             image = cv2.line(image_file, tuple(correct_vertex_1), tuple(correct_vertex_2), color, line_thicness)
     #    draw centroid circle
-    image = cv2.circle(image, tuple(centroid[0, :]), line_thicness, color, -1)
+    image = cv2.circle(image, tuple(centroid[0, :].astype(int)), line_thicness, color, -1)
     return image
 
 def proc_args(inp):
@@ -182,8 +182,8 @@ def test_batch_iterator(model, dataloader_test, args):
         centroid3dgt = test_batch[1]['centroid3d'].numpy()
         batch_label_info = test_batch[1]['batch_label_info']
         file_info = test_batch[1]['batch_file_info']
-        bb3d_defoult = test_batch[1]['bb3d_defoult'].numpy()
-        centroid3d_defoult = test_batch[1]['centroid3d_defoult'].numpy()
+        bb3d_defoult = test_batch[1]['bb3d_default'].numpy()
+        centroid3d_defoult = test_batch[1]['centroid3d_default'].numpy()
         internal_calibration_matrix = test_batch[1]['internal_calibration_matrix'].numpy()
         original_images = test_batch[1]['image_orig'].numpy()
 
