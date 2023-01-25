@@ -15,11 +15,11 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Compute Accuracy')
-parser.add_argument('--results-path', type=str, default='', 
+parser.add_argument('--results-path', type=str, default='',
                     help='')
 parser.add_argument('--rec-metrics', type=str, default='',
                     help='')
-parser.add_argument('--test-data', type=str, default='', 
+parser.add_argument('--test-data', type=str, default='',
                     help='Path to dataset test data')
 parser.add_argument('--bg-path', type=str, default="",
                     help='Path to the backgrounds folder')
@@ -51,14 +51,14 @@ sigma = 4
 radius = 4
 
 
-subject = ['S1','S2','S3','S4']            
+subject = ['S1','S2','S3','S4']
 camera = ['C1','C2']
 background = ['green']
 movement_type = ['random','round','sweep','press']
 movement_direction = ['left','right']
 object_type = [dataset_type]
 
-subject_test = ['S1','S2','S3','S4']            
+subject_test = ['S1','S2','S3','S4']
 camera_test = ['C1','C2']
 background_test = ['table']
 movement_type_test = ['sparsewave']
@@ -81,23 +81,23 @@ dataloader_test = DataLoader(dataset_test, batch_size=batch_size_test,shuffle=Tr
 # bbb = []
 
 for test_batch in enumerate(dataloader_test):
-    
-    bb3d_defoult = test_batch[1]['bb3d_defoult'].numpy()
+
+    bb3d_defoult = test_batch[1]['bb3d_default'].numpy()
     bb3d_defoult = bb3d_defoult[0,:,:]
-    centroid3d_defoult = test_batch[1]['centroid3d_defoult'].numpy()
-    
+    centroid3d_defoult = test_batch[1]['centroid3d_default'].numpy()
+
     # aaa.append(bb3d_defoult)
     # bbb.append(centroid3d_defoult)
-    
+
     break
 
 
 with open(results_path, 'rb') as f:
-    
+
     results = pickle.load(f)
 
-f.close()    
-    
+f.close()
+
 bb3d_gt_buffer = results['bb3d_gt_buffer']
 RTT_matrix_buffer = results['RTT_matrix_buffer']
 RTT_matrix_gt_buffer = results['RTT_matrix_gt_buffer']
@@ -105,24 +105,24 @@ RTT_matrix_gt_buffer = results['RTT_matrix_gt_buffer']
 bb3d_prediction_buffer = []
 
 for i in range(len(bb3d_gt_buffer)):
-    
+
     RTT_matrix_pred = RTT_matrix_buffer[i]
-    
+
     if type(RTT_matrix_pred) != str:
-    
+
         bb3d_defoult_i = np.c_[bb3d_defoult, np.ones((bb3d_defoult.shape[0], 1))].transpose()
-        
+
         points3d_pred = RTT_matrix_pred.dot(bb3d_defoult_i)
-        
+
         points3d_pred = np.rollaxis(points3d_pred,1,0)
-        
+
         bb3d_prediction_buffer.append(points3d_pred)
-        
+
     else:
-        
+
         bb3d_prediction_buffer.append(RTT_matrix_pred)
 
-    
+
 results['bb3d_prediction_buffer'] = bb3d_prediction_buffer
 
 # res_path = os.path.join(recomputed_metrics_dir,recomputed_metrics_file_name)
@@ -135,10 +135,10 @@ results['bb3d_prediction_buffer'] = bb3d_prediction_buffer
 
 # alternative err metric
 def alt_rot_met(rot_pred,rot_gt):
-    
+
     err = np.arccos((np.trace(np.dot(np.linalg.inv(rot_pred),rot_gt))-1)/2)
     err = math.degrees(err)
-    
+
     return err
 
 translation_err_list_final = results['translation_err_list_final']
@@ -153,50 +153,50 @@ rot_list = []
 rot_alt_list = []
 
 for i in range(len(translation_err_list_final)):
-    
+
     rot = rotation_err_list_final[i]
     trans = translation_err_list_final[i]
-    
+
     # alt metric
     if RTT_matrix_buffer[i] != 'NA':
-    
+
         rot_alt = alt_rot_met(RTT_matrix_buffer[i][:,0:3],RTT_matrix_gt_buffer[i][:,0:3])
-        
+
     else:
-        
+
         rot_alt = 10000
-    
+
     if (rot < 360) and (trans < 1):
-        
+
         if rot < 180:
-        
+
             rot_sum += rot
             rot_list.append(rot)
-            
+
         else:
-            
+
             rot_sum += (360-rot)
             rot_list.append(360-rot)
-            
+
         trans_sum += trans
-        
+
         count += 1
-        
-            
-        
+
+
+
     if (rot_alt < 360) and (trans < 1):
-        
+
         if rot_alt < 180:
-        
+
             rot_alt_sum += rot_alt
             rot_alt_list.append(rot_alt)
-            
+
         else:
-            
+
             rot_alt_sum += (360-rot_alt)
             rot_alt_list.append(360-rot_alt)
-            
 
-        
+
+
 print('valid prediction percentage : ' + str((count/len(translation_err_list_final))*100) + '; avg translation error : ' + str(trans_sum/count) + '; avg rotation error : ' + str(rot_sum/count) + '; avg rotation error alternative : ' + str(rot_alt_sum/count))
-        
+
