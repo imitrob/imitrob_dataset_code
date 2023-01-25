@@ -13,6 +13,10 @@ from dope_network import dope_net
 from error_metrics import rot_trans_err, ADD_error, calculate_AUC
 from evaluation import main as test_model
 from evaluation import draw_box3d
+from tqdm import trange, tqdm
+from tqdm.contrib import tenumerate
+import re
+from glob import iglob
 
 
 def train():
@@ -28,22 +32,22 @@ def train():
 
     timestamp_start = time.time()
 
-    for i in range(epochs):
+    for i in trange(epochs, desc="Epoch"):
 
         avg_train_loss = []
 
-        for train_batch in enumerate(dataloader):
+        for train_batch in tenumerate(dataloader, desc="Training progress", leave=False):
             train_images = train_batch[1]['image']
             train_affinities = train_batch[1]['affinities']
             train_beliefs = train_batch[1]['belief_img']
 
-            loss = net.train(train_images, train_affinities, train_beliefs)
+            loss = dope.train(train_images, train_affinities, train_beliefs)
 
             avg_train_loss.append(loss)
 
         test_batch_no = 0
 
-        for test_batch in enumerate(dataloader_test):
+        for test_batch in tenumerate(dataloader_test, desc="Testing progress", leave=False):
 
             test_images = test_batch[1]['image']
             test_affinities = test_batch[1]['affinities']
@@ -124,7 +128,7 @@ def train():
         AUC_err_list = []
 
         # try to find objects form the output of the network
-        for j in range(len(belief_test)):
+        for j in trange(len(belief_test), desc="Testing postproc", leave=False):
 
             # try to find objects using the network output
             # object finder can in small amount of cases throw an exception: IndexError: index 30 is out of bounds for axis 1 with size 30
@@ -216,7 +220,9 @@ def train():
             best_acc = AUC_acc
             max_acc_episode = i
 
-        print('Epoch : ' + str(i) + ' acc : ' + str(AUC_acc))
+        tqdm.write('Epoch : ' + str(i) + ' acc : ' + str(AUC_acc))
+
+    f.write(f">>>\nBest ACC episode: {max_acc_episode}\n<<<")
 
 
 if __name__ == '__main__':

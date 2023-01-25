@@ -14,6 +14,8 @@ from imitrob_dataset import imitrob_dataset
 from dope_network import dope_net
 import torch
 import cv2
+from tqdm import tqdm
+from tqdm.contrib import tenumerate
 
 
 currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
@@ -168,10 +170,10 @@ def test_batch_iterator(model, dataloader_test, args):
     bb3d_gt_buffer = []
     info_buffer = []
     file_buffer = []
-    print("Evaluating:")
+    tqdm.write("Evaluating:")
 
-    for test_batch in enumerate(dataloader_test):
-        print("Batch {}/{}".format(test_batch[0], len(dataloader_test)))
+    for test_batch in tenumerate(dataloader_test, desc="Batch"):
+        # print("Batch {}/{}".format(test_batch[0], len(dataloader_test)))
         test_images = test_batch[1]['image']
         test_affinities = test_batch[1]['affinities']
         test_beliefs = test_batch[1]['belief_img']
@@ -254,7 +256,7 @@ def test_batch_iterator(model, dataloader_test, args):
                    'bb3d_gt_buffer': bb3d_gt_buffer,
                    'info_buffer': info_buffer,
                    'file_buffer': file_buffer}
-    print("Done.")
+    tqdm.write("Done.")
     return ADD_err_list_final, err_metrics
 
 def generate_auc(ADD_err_list_final, err_metrics, args):
@@ -281,8 +283,9 @@ def generate_auc(ADD_err_list_final, err_metrics, args):
     plt.title(currenttime + '_' + 'DOPE')
     plt.savefig(os.path.join(args.exp_name, 'AUC_curve.png'), dpi=600)
 
-    # function to show the plot
-    plt.show()
+    if args.show_plots:
+        # function to show the plot
+        plt.show()
 
     # save error metrics file to log folder in pickle file
     err_metrics['AUC_acc_final'] = AUC_acc_final

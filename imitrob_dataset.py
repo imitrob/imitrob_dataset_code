@@ -16,6 +16,7 @@ from torch.utils.data import Dataset
 from dataset_tools import project_from_3d_to_2d
 from maps_tools import CreateBeliefMap, GenerateMapAffinity
 from randomize_bg import BG_randomizer
+from tqdm import tqdm, trange
 
 
 class imitrob_dataset(Dataset):
@@ -99,6 +100,7 @@ class imitrob_dataset(Dataset):
         self.object_type_list = []
         self.im_name_list = []
         self.search_dataset()
+
         if self.mode == "train":
             self.dataset_subset_train = attributes_train[0]
             self.subject_train = attributes_train[1]
@@ -131,7 +133,7 @@ class imitrob_dataset(Dataset):
                                                   self.task_test, self.hand_test, self.object_type_test)
 
     def search_dataset(self):
-        for filename in glob.iglob(self.source_folder + '**/*.jpg', recursive=True):
+        for filename in tqdm(glob.iglob(self.source_folder + '**/*.jpg', recursive=True), desc="Searching for images", leave=False):
             if 'Image' in filename:
                 img_file_list = filename.split(self.slash)
                 img_file_name = img_file_list[-1]
@@ -198,7 +200,7 @@ class imitrob_dataset(Dataset):
                     continue
 
         # make an list of attributes of every data sample
-        for i in range(len(self.paths_images)):
+        for i in trange(len(self.paths_images), desc="Extracting image features", leave=False):
             for d in self.dataset_subset:
                 if d in self.paths_images[i]:
                     self.dataset_subset_list.append(d)
@@ -232,7 +234,7 @@ class imitrob_dataset(Dataset):
     # determine valid indexes, ie indexes of the parts that we chose to include
     def det_valid_ind(self, dataset_subset, subject, camera, task, hand, object_type):
         valid_indexes = []
-        for i in range(len(self.paths_images)):
+        for i in trange(len(self.paths_images), desc="Filtering valid images", leave=False):
             if (self.dataset_subset_list[i] in dataset_subset) and (self.subject_list[i] in subject) and (
                     self.camera_list[i] in camera) and (self.task_list[i] in task) and (
                     self.hand_list[i] in hand) and (self.object_type_list[i] in object_type):
@@ -394,7 +396,7 @@ class imitrob_dataset(Dataset):
             sample = {'image': img_np, 'belief_img': belief_img, 'affinities': affinities,
                       'bb2d': bb2d, 'bb3d': bb3d, 'centroid2d': centroid2d, 'centroid3d': centroid3d,
                       'six_dof': six_dof,
-                      'bb3d_defoult': bb3d_defoult, 'centroid3d_defoult': centroid3d_defoult,
+                      'bb3d_default': bb3d_defoult, 'centroid3d_default': centroid3d_defoult,
                       'internal_calibration_matrix': internal_calibration_matrix,
                       'batch_label_info': batch_label_info,
                       'batch_file_info': batch_file_info,
@@ -410,7 +412,7 @@ class imitrob_dataset(Dataset):
             sample = {'image': img_np, 'image_orig': img_orig_np, 'belief_img': belief_img, 'affinities': affinities,
                       'bb2d': bb2d, 'bb3d': bb3d, 'centroid2d': centroid2d, 'centroid3d': centroid3d,
                       'six_dof': six_dof,
-                      'bb3d_defoult': bb3d_defoult, 'centroid3d_defoult': centroid3d_defoult,
+                      'bb3d_default': bb3d_defoult, 'centroid3d_default': centroid3d_defoult,
                       'internal_calibration_matrix': internal_calibration_matrix,
                       'batch_label_info': batch_label_info,
                       'batch_file_info': batch_file_info,
