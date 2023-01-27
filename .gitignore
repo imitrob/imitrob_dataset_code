@@ -5,3 +5,4 @@ samples/
 experiment_*/
 .vscode/
 *miniimagenet*
+data_acquisition/trace-extractor/data/*
