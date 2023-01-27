@@ -342,22 +342,23 @@ class imitrob_dataset(Dataset):
                 img_m_np_stacked = np.stack([img_m_np, img_m_np, img_m_np, img_m_np], axis=2)
                 img_m = Image.fromarray(img_m_np_stacked, mode='RGBA')
 
-            if self.randomizer_mode == 'bbox':
-                img, bb2d, centroid2d = self.randomizer.randomize_bg_bbox_from_mask(img, img_m, six_dof, bb2d,
-                                                                                    centroid2d,
-                                                                                    self.randomizer_mode_crop)
-            elif self.randomizer_mode == 'overlay':
-                img, bb2d, centroid2d = self.randomizer.randomize_bg_overlay_from_mask(img, img_m, six_dof, bb2d,
-                                                                                       centroid2d,
-                                                                                       self.randomizer_mode_crop,
-                                                                                       self.randomizer_mode_flip)
-            elif self.randomizer_mode == 'overlay_noise_bg':
-                img, bb2d, centroid2d = self.randomizer.randomize_bg_overlay_from_mask_noise_bg(img, img_m, six_dof,
-                                                                                                bb2d, centroid2d,
-                                                                                                self.randomizer_mode_crop,
-                                                                                                self.randomizer_mode_flip)
-            else:
-                pass
+            if self.randomizer_mode != 'none':
+                if self.randomizer_mode == 'bbox':
+                    img, bb2d, centroid2d = self.randomizer.randomize_bg_bbox_from_mask(img, img_m, six_dof, bb2d,
+                                                                                        centroid2d,
+                                                                                        self.randomizer_mode_crop)
+                elif self.randomizer_mode == 'overlay':
+                    img, bb2d, centroid2d = self.randomizer.randomize_bg_overlay_from_mask(img, img_m, six_dof, bb2d,
+                                                                                        centroid2d,
+                                                                                        self.randomizer_mode_crop,
+                                                                                        self.randomizer_mode_flip)
+                elif self.randomizer_mode == 'overlay_noise_bg':
+                    img, bb2d, centroid2d = self.randomizer.randomize_bg_overlay_from_mask_noise_bg(img, img_m, six_dof,
+                                                                                                    bb2d, centroid2d,
+                                                                                                    self.randomizer_mode_crop,
+                                                                                                    self.randomizer_mode_flip)
+                else:
+                    raise ValueError(f"Unknown background randomization option: {self.randomizer_mode}!")
 
         # rescale image
         if self.scale > 1:
