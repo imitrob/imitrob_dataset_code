@@ -36,9 +36,9 @@ class BG_randomizer():
         if bg_path != '':
         
             for filename in glob.iglob(self.source_folder + '**/*.jpg', recursive=True):
-                
-                self.paths_images.append(filename)
-            
+
+                self.paths_images.append(os.path.abspath(filename))
+
 #        debug code (find out how lowering number of bacground images impact accuracy)
 #            does not seem to make much difference
             
