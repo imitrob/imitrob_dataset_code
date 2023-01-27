@@ -66,7 +66,7 @@ def train():
             images = test_batch[1]['image_orig'].numpy()
 
             # run test images through network
-            belief, affinity, loss = net.test(test_images, test_affinities, test_beliefs)
+            belief, affinity, loss = dope.test(test_images, test_affinities, test_beliefs)
 
             # clip the range of output belief images between 0 and 1, slightly helps the performance of object_detector
             belief = belief.clip(min=0., max=1.)
@@ -214,9 +214,10 @@ def train():
 
         f.flush()
 
+        dope.save_model(os.path.join(log_dir, f'checkpoint_{i}.pth.tar'))
         # if test loss improved comapred to last test, save the current weights of the model
         if AUC_acc >= best_acc:
-            net.save_model(os.path.join(logdir, 'checkpoint.pth.tar'))
+            dope.save_model(os.path.join(log_dir, 'checkpoint.pth.tar'))
             best_acc = AUC_acc
             max_acc_episode = i
 
@@ -375,7 +376,7 @@ if __name__ == '__main__':
                        mask_type]
 
     # initialize network
-    net = dope_net(lr, gpu_device)  # switch dope_net for your own network
+    dope = dope_net(lr, gpu_device)  # switch dope_net for your own network
 
     # Create Imitrob Train dataset
     dataset = imitrob_dataset(dataset_path_train, bg_path, 'train', test_set_selection,
@@ -414,6 +415,11 @@ if __name__ == '__main__':
     f.write('Training started at:' + (time.strftime("%Y_%m_%d___%H_%M_%S") + '\n'))
     f.write('========================================================' + '\n')
 
-    train()
+    try:
+        train()
+    except KeyboardInterrupt:
+        print("User requested training interrupt. Will continue with testing, press Ctrl+C again to terminate completely.")
     if not args.skip_testing:
-        test_model(net.load_model(os.path.join(logdir, 'checkpoint.pth.tar')), args=args)
+        dope.load_model(os.path.join(log_dir, 'checkpoint.pth.tar'))
+        evaluation_model = dope.net
+        test_model(evaluation_model, args=args)
