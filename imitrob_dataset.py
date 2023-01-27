@@ -11,12 +11,17 @@ import json
 import random
 import copy
 from PIL import Image
+from PIL import ImageFile
 from scipy.spatial.transform import Rotation as R
 from torch.utils.data import Dataset
 from dataset_tools import project_from_3d_to_2d
 from maps_tools import CreateBeliefMap, GenerateMapAffinity
 from randomize_bg import BG_randomizer
 from tqdm import tqdm, trange
+import traceback
+
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True  # magic to stop errors: https://discuss.pytorch.org/t/questions-about-dataloader-and-dataset/806/4
 
 
 class imitrob_dataset(Dataset):
