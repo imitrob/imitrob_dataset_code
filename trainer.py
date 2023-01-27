@@ -233,6 +233,8 @@ if __name__ == '__main__':
                         help='Path to the Test directory of Imitrob')
     parser.add_argument('--bg_path', type=str, default="",
                         help='Path to the backgrounds folder')
+    parser.add_argument('--output_directory', "--out-dir", type=str, default="",
+                        help='Path to a folder where the experiment result folder will be created. If unspecified, a result folder in the current directory is used (created, if does not exist).')
     parser.add_argument('--epochs', type=int, default=10,
                         help='Number of epochs to train')
     parser.add_argument('--lr', type=float, default=0.0001,
@@ -245,6 +247,10 @@ if __name__ == '__main__':
                         help='Maximum .jpg visualizations (output examples) to be saved for test')
     parser.add_argument('--exp_name', type=str, default="",
                         help='Name of the folder were results will be stored. Choose unique name for every experiment')
+    parser.add_argument('--auto_exp_name', '--auto_exp', action="store_true",
+                        help='Automatically generate name of the experiment. Naming convention is "experiment_%N" where %N is an increasing integer. Overrides "exp_name" argument.')
+    parser.add_argument('--add_exp_to_table', '--add2table', action="store_true",
+                        help='Add experiment name and metadata to a CSV table in the output directory. Creates the table if one does not exist.')
     parser.add_argument('--mask_type', action='store', choices=['Mask', 'Mask_thresholding'], type=str, default='Mask',
                         help='Choose the type of mask used during training. Mask or Mask_thresholding')
     parser.add_argument('--randomizer_mode', action='store', choices=['none', 'bbox', 'overlay', 'overlay_noise_bg'],
@@ -274,6 +280,26 @@ if __name__ == '__main__':
     parser.add_argument('--skip_testing', default=False, action='store_true',
                         help='If this flag is used, the testing after training will be omitted.')
     args = parser.parse_args()
+
+    if len(args.output_directory):
+        if not os.path.exists(args.output_directory):
+            raise IOError(f'The provided output directory does not exist!\noutput_directory args: {args.output_directory}')
+        main_dir = args.output_directory
+    else:
+        cwd = os.getcwd()
+        main_dir = os.path.join(cwd, 'results')
+
+    if args.auto_exp_name:
+        existing_exp_folders = [re.search(r".*_(\d+)", found_exp) for found_exp in iglob(os.path.join("results", "experiment_*[0-9]"))]
+        highest_exp_num = max([int(eef.group(1)) for eef in existing_exp_folders if eef is not None])
+        experiment_name = f"experiment_{highest_exp_num + 1}"
+    else:
+        experiment_name = args.exp_name
+
+    if args.add_exp_to_table:
+    currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
+    log_dir = os.path.join(main_dir, experiment_name)
+    os.makedirs(log_dir)
 
     epochs = args.epochs
     lr = args.lr
@@ -368,15 +394,9 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     dataloader_test = DataLoader(dataset_test, batch_size=batch_size_test, shuffle=True, num_workers=num_workers)
 
+    os.chdir(log_dir)
+
     # create log folder in results folder and write training info into log file
-    cwd = os.getcwd()
-
-    logs_dir = os.path.join(cwd, 'results')
-
-    currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
-    logdir = os.path.join(logs_dir, experiment_name)
-    os.makedirs(logdir)
-    os.chdir(logdir)
     f = open('logfile_' + currenttime + '.txt', 'w')
     f.write('dataset type : ' + dataset_type + '\n')
     f.write('test set selection mode : ' + test_set_selection + '\n')
