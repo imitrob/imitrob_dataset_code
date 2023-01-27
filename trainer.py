@@ -19,6 +19,9 @@ import re
 from glob import iglob
 
 
+KEEP_TRAIN_N_TEST_BARS = True
+
+
 def train():
     # main train loop
     best_acc = 0.
@@ -36,7 +39,7 @@ def train():
 
         avg_train_loss = []
 
-        for train_batch in tenumerate(dataloader, desc="Training progress", leave=False):
+        for train_batch in tenumerate(dataloader, desc="Training progress", leave=KEEP_TRAIN_N_TEST_BARS):
             train_images = train_batch[1]['image']
             train_affinities = train_batch[1]['affinities']
             train_beliefs = train_batch[1]['belief_img']
@@ -47,7 +50,7 @@ def train():
 
         test_batch_no = 0
 
-        for test_batch in tenumerate(dataloader_test, desc="Testing progress", leave=False):
+        for test_batch in tenumerate(dataloader_test, desc="Testing progress", leave=KEEP_TRAIN_N_TEST_BARS):
 
             test_images = test_batch[1]['image']
             test_affinities = test_batch[1]['affinities']
@@ -117,7 +120,7 @@ def train():
         object_finder_exceptions = 0
 
         # make dir inside logdir where bb visualizations will be stored
-        ep_sample_dir = os.path.join(logdir, 'Samples_episode_' + str(i))
+        ep_sample_dir = os.path.join(log_dir, 'Samples_episode_' + str(i))
 
         os.makedirs(ep_sample_dir)
 
@@ -280,6 +283,8 @@ if __name__ == '__main__':
                         help='List of tasks to be used for testing. All tasks: clutter,round,sweep,press,frame,sparsewave,densewave')
     parser.add_argument('--skip_testing', default=False, action='store_true',
                         help='If this flag is used, the testing after training will be omitted.')
+    parser.add_argument('--show_plots', action='store_true',
+                        help='Show generated plots. This will halt the execution. Otherwise, plots are simply saved without displaying them.')
     args = parser.parse_args()
 
     if len(args.output_directory):
@@ -298,6 +303,8 @@ if __name__ == '__main__':
         experiment_name = args.exp_name
 
     if args.add_exp_to_table:
+        pass
+
     currenttime = time.strftime("%Y_%m_%d___%H_%M_%S")
     log_dir = os.path.join(main_dir, experiment_name)
     os.makedirs(log_dir)
@@ -320,8 +327,6 @@ if __name__ == '__main__':
     AUC_test_thresh_range = [0., 0.1]
 
     dataset_type = args.dataset_type
-
-    experiment_name = args.exp_name
 
     mask_type = args.mask_type
 
