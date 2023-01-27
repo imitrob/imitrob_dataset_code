@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pickle
+import yaml
 import os
 import argparse
 import matplotlib.pyplot as plt
@@ -309,6 +310,10 @@ def main(model, args=None):
     with open(os.path.join(args.exp_name,'err_metrics.pkl'), 'wb') as f:
         pickle.dump(err_metrics, f)
         print("Results saved as {}".format('err_metrics.pkl'))
+
+    with open(os.path.join(args.exp_name,'err_metrics.yaml'), 'w') as f:
+        yaml.dump(err_metrics, f)
+        print("Results also saved as {}".format('err_metrics.yaml'))
 
 
 if __name__ == '__main__':
